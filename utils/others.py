@@ -5,10 +5,11 @@ import argparse
 import asyncio
 import datetime
 import json
+import os
 import re
 from inspect import iscoroutinefunction
 from io import BytesIO
-from typing import TYPE_CHECKING, Union, Optional
+from typing import TYPE_CHECKING, Iterable, Optional, Union
 
 import disnake
 from disnake.ext import commands
@@ -21,6 +22,47 @@ if TYPE_CHECKING:
     from utils.music.models import LavalinkPlayer
 
 token_regex = re.compile(r'[a-zA-Z0-9_-]{23,28}\.[a-zA-Z0-9_-]{6,7}\.[a-zA-Z0-9_-]{27,}')
+
+
+def mask_sensitive(text: str, extra_secrets: Optional[Iterable[str]] = None, placeholder: str = "[REDACTED]") -> str:
+    """Mask Discord-format tokens and any extra secrets passed in.
+
+    Why: error reports and logs can leak the bot token or other credentials when
+    exceptions embed them in messages. Pattern-based masking catches tokens even
+    if they appear in unexpected places (e.g. inside formatted tracebacks).
+    """
+    if not text:
+        return text
+    if extra_secrets:
+        for secret in extra_secrets:
+            if secret and isinstance(secret, str) and len(secret) >= 8:
+                text = text.replace(secret, placeholder)
+    return token_regex.sub(placeholder, text)
+
+
+def request_restart(reason: str = "", delay: float = 0.0) -> None:
+    """Cross-platform graceful-ish process termination so the supervisor restarts us.
+
+    Why: the previous implementation ran ``kill 1`` via a shell, which only works
+    on Linux containers (and not on Windows/macOS) and was vulnerable to PATH
+    issues. ``os._exit`` exits the current Python process regardless of platform;
+    the host (Pterodactyl egg, systemd, ``source_start_windows.bat`` restart loop)
+    is responsible for bringing it back up.
+    """
+    if reason:
+        print(f"[restart] {reason}", flush=True)
+
+    def _do_exit():
+        os._exit(1)
+
+    if delay > 0:
+        try:
+            loop = asyncio.get_running_loop()
+            loop.call_later(delay, _do_exit)
+            return
+        except RuntimeError:
+            pass
+    _do_exit()
 
 class Test:
 

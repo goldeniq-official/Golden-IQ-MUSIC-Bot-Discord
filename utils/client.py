@@ -39,7 +39,7 @@ from utils.music.local_lavalink import run_lavalink
 from utils.music.models import music_mode, LavalinkPlayer, LavalinkPlaylist, LavalinkTrack, PartialTrack, \
     native_sources, CustomYTDL
 from utils.music.remote_lavalink_serverlist import get_lavalink_servers
-from utils.others import CustomContext, token_regex, sort_dict_recursively
+from utils.others import CustomContext, token_regex, sort_dict_recursively, request_restart
 from utils.owner_panel import PanelView
 from web_app import WSClient, start
 
@@ -264,7 +264,7 @@ class BotPool:
 
                 await asyncio.sleep(5)
 
-                await asyncio.create_subprocess_shell("kill 1")
+                request_restart(reason="Discord 429 rate-limit — restarting process so supervisor can back off.")
 
                 return
 

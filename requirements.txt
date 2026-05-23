@@ -1,31 +1,54 @@
+# Discord library (pinned to a specific upstream commit for stable behavior with this codebase)
 git+https://github.com/DisnakeDev/disnake.git@96ed4459eff7f7b8a841f62e5d542d44dc721895
-python-dotenv
-user_agent
-requests>=2.31.0
-humanize
-motor
-tinymongo
+
+# Core utils
+python-dotenv>=1.0.0
+user_agent>=0.1.10
+requests>=2.32.0
+humanize>=4.9.0
+aiofiles>=23.2.1
+psutil>=5.9.8
+packaging>=23.2
+emoji>=2.10.0
+regex>=2024.5.10
+cachetools>=5.3.0
+rapidfuzz>=3.6.0
+ruamel.yaml>=0.18.0
+nest_asyncio>=1.6.0
+
+# Database
+motor>=3.4.0
+tinymongo>=0.2.0
+aiosqlite>=0.20.0
 dnspython>=2.6.1
-psutil
-aiofiles
-git+https://github.com/zRitsu/jishaku.git@14d2dbd51d61382c687af8d8655f54f41674c0eb
-packaging
-aiosqlite
+
+# Lyrics
+syncedlyrics>=0.7.0
+pylrc>=0.1.2
+
+# YT/Audio extraction
 yt-dlp[default]>=2025.08.11
+
+# Web server
 tornado>=6.4.2
-emoji
+
+# HTTP / networking
 urllib3>=2.5.0
-async-timeout
-cachetools
-regex
-syncedlyrics
-pylrc
-rapidfuzz
+async-timeout>=4.0.3
+curl_cffi>=0.7.0
+
+# Browser-based scrapers (used by some audio sources)
 nodriver==0.32
 undetected-chromedriver==3.5.5
-ruamel.yaml
-nest_asyncio
+
+# REPL helpers (pinned to a fork compatible with this disnake version)
+git+https://github.com/zRitsu/jishaku.git@14d2dbd51d61382c687af8d8655f54f41674c0eb
+
+# Python 3.12+: setuptools is no longer bundled with venv
 setuptools>=70.0.0; python_version>='3.12'
-curl_cffi
+
+# Python 3.13+: audioop was removed from the stdlib
 audioop-lts; python_version>='3.13'
-uvloop; sys_platform != 'win32'
+
+# Faster event loop on POSIX (not supported on Windows)
+uvloop>=0.19.0; sys_platform != 'win32'

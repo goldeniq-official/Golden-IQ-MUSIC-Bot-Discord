@@ -43,10 +43,9 @@ class PlayerSession(commands.Cog):
     @commands.Cog.listener()
     async def on_player_destroy(self, player: LavalinkPlayer):
 
-        try:
-            player.queue_updater_task.cancel()
-        except:
-            pass
+        task = getattr(player, "_queue_updater_task", None)
+        if task is not None and not task.done():
+            task.cancel()
 
         await self.delete_data(player)
 
@@ -71,7 +70,9 @@ class PlayerSession(commands.Cog):
                 try:
                     await player.process_save_queue()
                     player_count += 1
-                except:
+                except asyncio.CancelledError:
+                    raise
+                except Exception:
                     continue
 
         txt = f"Current player information saved successfully ({player_count})!" if player_count else "No active player..."
@@ -82,13 +83,23 @@ class PlayerSession(commands.Cog):
         while True:
 
             if self.bot.config["PLAYER_SESSIONS_MONGODB"] and self.bot.config["MONGO"]:
-                await asyncio.sleep(self.bot.config["PLAYER_INFO_BACKUP_INTERVAL_MONGO"])
+                interval = self.bot.config["PLAYER_INFO_BACKUP_INTERVAL_MONGO"]
             else:
-                await asyncio.sleep(self.bot.config["PLAYER_INFO_BACKUP_INTERVAL"])
+                interval = self.bot.config["PLAYER_INFO_BACKUP_INTERVAL"]
+
+            try:
+                await asyncio.sleep(interval)
+            except asyncio.CancelledError:
+                return
+
+            if getattr(player, "is_closing", False):
+                return
 
             try:
                 await self.save_info(player)
-            except:
+            except asyncio.CancelledError:
+                return
+            except Exception:
                 traceback.print_exc()
 
     async def save_info(self, player: LavalinkPlayer):
@@ -98,12 +109,12 @@ class PlayerSession(commands.Cog):
 
         try:
             message_id = player.message.id
-        except:
+        except AttributeError:
             message_id = None
 
         try:
             text_channel_id = player.text_channel.id
-        except:
+        except AttributeError:
             text_channel_id = None
             message_id = None
 
@@ -118,7 +129,7 @@ class PlayerSession(commands.Cog):
                 player.current.info["playlist"] = {"name": player.current.playlist_name, "url": player.current.playlist_url}
                 try:
                     player.current.info["playlist"]["thumb"] = player.current.playlist.thumb
-                except:
+                except AttributeError:
                     pass
             tracks.append(player.current.info)
 
@@ -212,7 +223,9 @@ class PlayerSession(commands.Cog):
 
         try:
             await self.save_session(player, data=data)
-        except:
+        except asyncio.CancelledError:
+            raise
+        except Exception:
             traceback.print_exc()
 
     async def resume_players(self):
@@ -779,11 +792,10 @@ class PlayerSession(commands.Cog):
 
         try:
             player = player.bot.music.players[player.guild.id]
-        except:
-            try:
-                player.queue_updater_task.cancel()
-            except:
-                pass
+        except (KeyError, AttributeError):
+            task = getattr(player, "_queue_updater_task", None)
+            if task is not None and not task.done():
+                task.cancel()
             return
 
         try:
@@ -821,20 +833,15 @@ class PlayerSession(commands.Cog):
             self.delete_data_local(guild_id)
 
     def cog_unload(self):
-        try:
-            self.resume_task.cancel()
-        except:
-            pass
+        task = getattr(self, "resume_task", None)
+        if task is not None and not task.done():
+            task.cancel()
 
         for guild_id in list(self.bot.players_resumed):
-            try:
-                self.bot.players_resumed[guild_id].cancel()
-            except:
-                pass
-            try:
-                del self.bot.players_resumed[guild_id]
-            except KeyError:
-                continue
+            resume = self.bot.players_resumed.get(guild_id)
+            if resume is not None and not resume.done():
+                resume.cancel()
+            self.bot.players_resumed.pop(guild_id, None)
 
 def setup(bot: BotCore):
     bot.add_cog(PlayerSession(bot))

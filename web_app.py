@@ -36,19 +36,22 @@ class IndexHandler(tornado.web.RequestHandler):
 
     async def prepare(self):
 
-        bots = [asyncio.create_task(bot.wait_until_ready()) for bot in self.pool.bots if not bot.is_ready()]
+        pending = [bot.wait_until_ready() for bot in self.pool.bots if not bot.is_ready()]
 
-        if bots:
+        if pending:
             self.write("")
             await self.flush()
-            await asyncio.wait(bots, timeout=7)
+            try:
+                await asyncio.wait_for(
+                    asyncio.gather(*pending, return_exceptions=True),
+                    timeout=7,
+                )
+            except asyncio.TimeoutError:
+                pass
 
     async def get(self):
 
-        try:
-            killing_state = self.pool.killing_state
-        except:
-            killing_state = False
+        killing_state = getattr(self.pool, "killing_state", False)
 
         if killing_state is True:
             self.write('<h1 style=\"font-size:5vw\">The application will restart shortly...</h1>')
@@ -228,7 +231,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
                 users_ws[u_id].write_message(json.dumps({"op": "disconnect",
                                                "reason": "New session started from another location..."}))
                 users_ws[u_id].close(code=4200)
-            except:
+            except (KeyError, tornado.websocket.WebSocketClosedError, AttributeError):
                 pass
             users_ws[u_id] = self
 
@@ -293,10 +296,8 @@ class WSClient:
     async def connect(self):
 
         for t in self.connect_task:
-            try:
+            if t is not None and not t.done():
                 t.cancel()
-            except:
-                continue
 
         if not self.session:
             self.session = aiohttp.ClientSession()
@@ -350,16 +351,14 @@ class WSClient:
 
         try:
             await self.connection.send_json(data)
-        except:
+        except (aiohttp.ClientError, ConnectionError, RuntimeError):
             print_exc()
 
     def clear_tasks(self):
 
         for t in self.connect_task:
-            try:
+            if t is not None and not t.done():
                 t.cancel()
-            except:
-                continue
 
         self.connect_task.clear()
 

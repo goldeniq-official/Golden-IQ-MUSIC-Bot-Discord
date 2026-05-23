@@ -11,7 +11,7 @@ from disnake.ext import commands
 
 from utils.music.converters import URL_REG
 from utils.music.errors import parse_error, PoolException
-from utils.others import send_message, CustomContext, string_to_file, paginator, check_cmd
+from utils.others import send_message, CustomContext, string_to_file, paginator, check_cmd, mask_sensitive, request_restart
 
 if TYPE_CHECKING:
     from utils.client import BotCore
@@ -48,7 +48,7 @@ class ErrorHandler(commands.Cog):
         if not isinstance(error, commands.MaxConcurrencyReached):
             try:
                 await inter.application_command._max_concurrency.release(inter)
-            except:
+            except (AttributeError, RuntimeError):
                 pass
 
         await self.process_interaction_error(inter=inter, error=error)
@@ -114,7 +114,7 @@ class ErrorHandler(commands.Cog):
             kwargs["embed"] = disnake.Embed(
                 color=color,
                 title = "An error occurred in the command:",
-                description=f"```py\n{repr(error)[:2030].replace(self.bot.http.token, 'mytoken')}```"
+                description=f"```py\n{mask_sensitive(repr(error)[:2030], extra_secrets=[self.bot.http.token])}```"
             )
 
             if self.bot.config["AUTO_ERROR_REPORT_WEBHOOK"]:
@@ -131,14 +131,14 @@ class ErrorHandler(commands.Cog):
         if resp_msg:
             try:
                 await send_message(inter, components=components, **kwargs)
-            except:
+            except Exception:
                 print(("-"*50) + f"\n{error_msg}\n" + ("-"*50))
                 traceback.print_exc()
         else:
             send_webhook = True
 
         if kill_process:
-            await asyncio.create_subprocess_shell("kill 1")
+            request_restart(reason="Critical error requested process restart (interaction handler)", delay=2)
             return
 
         if not send_webhook or not full_error_msg:
@@ -149,14 +149,14 @@ class ErrorHandler(commands.Cog):
 
             await self.send_webhook(
                 embed=self.build_report_embed(inter),
-                file=string_to_file(full_error_msg, "error_traceback_interaction.txt")
+                file=string_to_file(mask_sensitive(full_error_msg, extra_secrets=[self.bot.http.token]), "error_traceback_interaction.txt")
             )
 
             await asyncio.sleep(20)
 
             await self.webhook_max_concurrency.release(inter)
 
-        except:
+        except Exception:
             traceback.print_exc()
 
     async def do_playcmd(self, ctx: CustomContext):
@@ -252,7 +252,7 @@ class ErrorHandler(commands.Cog):
                 kwargs["embed"] = disnake.Embed(
                     color=disnake.Colour.red(),
                     title="An error occurred in the command:",
-                    description=f"```py\n{repr(error)[:2030].replace(self.bot.http.token, 'mytoken')}```"
+                    description=f"```py\n{mask_sensitive(repr(error)[:2030], extra_secrets=[self.bot.http.token])}```"
                 )
                 if self.bot.config["AUTO_ERROR_REPORT_WEBHOOK"]:
                     send_webhook = True
@@ -260,7 +260,7 @@ class ErrorHandler(commands.Cog):
 
             else:
                 kwargs["content"] += "\n**An error occurred in the command:**\n" \
-                                     f"```py\n{repr(error)[:2030].replace(self.bot.http.token, 'mytoken')}```"
+                                     f"```py\n{mask_sensitive(repr(error)[:2030], extra_secrets=[self.bot.http.token])}```"
 
         else:
 
@@ -300,7 +300,7 @@ class ErrorHandler(commands.Cog):
             send_webhook = True
 
         if kill_process:
-            await asyncio.create_subprocess_shell("kill 1")
+            request_restart(reason="Critical error requested process restart (legacy command handler)", delay=2)
             return
 
         if not send_webhook or not full_error_msg:
@@ -311,14 +311,14 @@ class ErrorHandler(commands.Cog):
 
             await self.send_webhook(
                 embed=self.build_report_embed(ctx),
-                file=string_to_file(full_error_msg, "error_traceback_prefixed.txt")
+                file=string_to_file(mask_sensitive(full_error_msg, extra_secrets=[self.bot.http.token]), "error_traceback_prefixed.txt")
             )
 
             await asyncio.sleep(20)
 
             await self.webhook_max_concurrency.release(ctx)
 
-        except:
+        except Exception:
             traceback.print_exc()
 
     @commands.Cog.listener("on_button_click")
