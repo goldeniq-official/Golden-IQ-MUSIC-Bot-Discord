@@ -1,5 +1,5 @@
 {
-  "_comment": "DO NOT EDIT — Pterodactyl egg for Golden IQ MUSIC Bot. Import this file via the Pterodactyl admin panel: Nests -> (choose a nest) -> Import Egg.",
+  "_comment": "Pterodactyl egg for Golden IQ MUSIC Bot. Import via the admin panel: Nests -> (choose a nest) -> Import Egg.",
   "meta": {
     "version": "PTDL_v2",
     "update_url": null
@@ -7,16 +7,16 @@
   "exported_at": "2026-05-23T00:00:00+00:00",
   "name": "Golden IQ MUSIC Bot",
   "author": "info@goldeniq.email",
-  "description": "Discord music bot based on MuseHeart-MusicBot. Supports YouTube, Spotify, SoundCloud, Last.fm, slash commands, interactive player and Lavalink v3/v4. The bot can auto-download Lavalink.jar and a JDK if RUN_LOCAL_LAVALINK is enabled.",
-  "features": ["eula"],
+  "description": "Discord music bot based on MuseHeart-MusicBot. Supports YouTube, Spotify, SoundCloud, Last.fm, slash commands and Lavalink v3/v4.",
+  "features": null,
   "docker_images": {
-    "Python 3.14 (default)": "ghcr.io/parkervcp/yolks:python_3.14",
+    "Python 3.14": "ghcr.io/parkervcp/yolks:python_3.14",
     "Python 3.13": "ghcr.io/parkervcp/yolks:python_3.13",
     "Python 3.12": "ghcr.io/parkervcp/yolks:python_3.12",
     "Python 3.11": "ghcr.io/parkervcp/yolks:python_3.11"
   },
   "file_denylist": [],
-  "startup": "if [ \"${AUTO_UPDATE}\" = \"1\" ] && [ -d \".git\" ]; then git pull --ff-only || echo 'git pull failed, continuing with current files'; fi; if [ -f requirements.txt ] && [ \"${SKIP_PIP_ON_START}\" != \"1\" ]; then python3 -m pip install --no-cache-dir --user -r requirements.txt; fi; python3 -u main.py",
+  "startup": "/home/container/start.sh",
   "config": {
     "files": "{}",
     "startup": "{\r\n    \"done\": \"] Online.\"\r\n}",
@@ -25,27 +25,25 @@
   },
   "scripts": {
     "installation": {
-      "script": "#!/bin/bash\n# Golden IQ MUSIC Bot — Pterodactyl install script\n# Runs inside an Alpine container; targets /mnt/server which is the\n# user's persistent volume.\n\nset -e\n\napk update\napk add --no-cache git curl ca-certificates bash openjdk17-jre-headless\n\nmkdir -p /mnt/server\ncd /mnt/server\n\nif [ -n \"${GIT_ADDRESS}\" ]; then\n    if [ ! -d .git ]; then\n        echo \"[install] Cloning ${GIT_ADDRESS} (branch=${BRANCH:-main})\"\n        if [ -z \"$(ls -A . 2>/dev/null)\" ]; then\n            git clone --branch \"${BRANCH:-main}\" --single-branch \"${GIT_ADDRESS}\" .\n        else\n            git clone --branch \"${BRANCH:-main}\" --single-branch \"${GIT_ADDRESS}\" /tmp/repo\n            cp -rn /tmp/repo/. .\n            rm -rf /tmp/repo\n        fi\n    else\n        echo \"[install] Repo already cloned, pulling latest\"\n        git pull --ff-only || true\n    fi\nfi\n\nif [ ! -f main.py ]; then\n    echo '[install] WARNING: main.py not found. Upload your bot source via SFTP/File Manager or set GIT_ADDRESS env var.'\nfi\n\nif [ -f requirements.txt ]; then\n    echo '[install] Installing Python dependencies'\n    python3 -m pip install --upgrade --no-cache-dir pip wheel setuptools\n    python3 -m pip install --no-cache-dir -r requirements.txt\nfi\n\nif [ ! -f .env ] && [ -f .example.env ]; then\n    echo '[install] Copying .example.env -> .env (remember to set TOKEN)'\n    cp .example.env .env\nfi\n\necho '[install] Done.'\n",
-      "container": "python:3.14-alpine",
+      "script": "#!/bin/bash\nset -e\n\napt update\napt install -y --no-install-recommends git curl ca-certificates openjdk-17-jre-headless\n\nmkdir -p /mnt/server\ncd /mnt/server\n\nif [ -n \"${GIT_ADDRESS}\" ] && [ ! -d .git ]; then\n  echo \"[install] Cloning ${GIT_ADDRESS} (branch=${BRANCH:-main})\"\n  if [ -z \"$(ls -A . 2>/dev/null)\" ]; then\n    git clone --branch \"${BRANCH:-main}\" --single-branch \"${GIT_ADDRESS}\" .\n  else\n    git clone --branch \"${BRANCH:-main}\" --single-branch \"${GIT_ADDRESS}\" /tmp/repo\n    cp -rn /tmp/repo/. .\n    rm -rf /tmp/repo\n  fi\nfi\n\nif [ -f requirements.txt ]; then\n  python3 -m pip install --upgrade --no-cache-dir pip wheel setuptools\n  python3 -m pip install --no-cache-dir -r requirements.txt\nfi\n\n# Force env-var-driven config on Pterodactyl: remove any stale .env that\n# could shadow the variables set in the panel (dotenv_values() in\n# config_loader.py overrides os.environ if a .env file exists).\nrm -f .env config.json\n\ncat > /mnt/server/start.sh << 'EOF'\n#!/bin/bash\ncd /home/container\n# Pterodactyl: always trust panel env vars. Wipe any .env that may have\n# been left behind by previous installs / git pulls.\nrm -f .env config.json\nif [ \"${AUTO_UPDATE}\" = \"1\" ] && [ -d .git ]; then\n  git pull --ff-only || echo \"git pull failed, continuing\"\n  # git pull may have restored .env / config.json from the repo; remove again.\n  rm -f .env config.json\nfi\nif [ \"${SKIP_PIP_ON_START}\" != \"1\" ] && [ -f requirements.txt ]; then\n  python3 -m pip install --no-cache-dir -r requirements.txt\nfi\nexec python3 -u main.py\nEOF\nchmod +x /mnt/server/start.sh\n\necho \"[install] Done.\"\n",
+      "container": "debian:bookworm-slim",
       "entrypoint": "bash"
     }
   },
   "variables": [
     {
-      "sort": 1,
       "name": "Discord Bot Token",
-      "description": "The bot token from the Discord Developer Portal. Required.",
+      "description": "The bot token from the Discord Developer Portal.",
       "env_variable": "TOKEN",
       "default_value": "",
       "user_viewable": true,
       "user_editable": true,
-      "rules": "required|string|min:50",
+      "rules": "required|string",
       "field_type": "text"
     },
     {
-      "sort": 2,
-      "name": "Git Repository (optional)",
-      "description": "If set, the bot source is cloned from this URL on first install. Leave empty if you upload files manually.",
+      "name": "Git Repository",
+      "description": "Optional. Git URL to clone the bot from on first install.",
       "env_variable": "GIT_ADDRESS",
       "default_value": "",
       "user_viewable": true,
@@ -54,7 +52,6 @@
       "field_type": "text"
     },
     {
-      "sort": 3,
       "name": "Git Branch",
       "description": "Branch to clone when GIT_ADDRESS is set.",
       "env_variable": "BRANCH",
@@ -65,31 +62,28 @@
       "field_type": "text"
     },
     {
-      "sort": 4,
-      "name": "Auto Update on Start",
-      "description": "Set to 1 to run `git pull` on every start (only effective if the repo was cloned via GIT_ADDRESS).",
+      "name": "Auto Update",
+      "description": "Set to 1 to run git pull on every start.",
       "env_variable": "AUTO_UPDATE",
       "default_value": "0",
       "user_viewable": true,
       "user_editable": true,
-      "rules": "required|in:0,1",
+      "rules": "required|string|in:0,1",
       "field_type": "text"
     },
     {
-      "sort": 5,
       "name": "Skip pip install on start",
-      "description": "Set to 1 to skip `pip install -r requirements.txt` on every start (faster boot after first run).",
+      "description": "Set to 1 to skip pip install on every start (faster boot).",
       "env_variable": "SKIP_PIP_ON_START",
       "default_value": "0",
       "user_viewable": true,
       "user_editable": true,
-      "rules": "required|in:0,1",
+      "rules": "required|string|in:0,1",
       "field_type": "text"
     },
     {
-      "sort": 10,
-      "name": "MongoDB Connection URL",
-      "description": "Optional. Recommended for production. Leave blank to fall back to the local JSON database.",
+      "name": "MongoDB URL",
+      "description": "Optional. MongoDB connection string.",
       "env_variable": "MONGO",
       "default_value": "",
       "user_viewable": true,
@@ -98,8 +92,7 @@
       "field_type": "text"
     },
     {
-      "sort": 11,
-      "name": "Default command prefix",
+      "name": "Default Prefix",
       "description": "Prefix for legacy text commands.",
       "env_variable": "DEFAULT_PREFIX",
       "default_value": "!!",
@@ -109,9 +102,8 @@
       "field_type": "text"
     },
     {
-      "sort": 12,
       "name": "Owner IDs",
-      "description": "Space-separated Discord user IDs that should have owner privileges.",
+      "description": "Space-separated Discord user IDs with owner privileges.",
       "env_variable": "OWNER_IDS",
       "default_value": "",
       "user_viewable": true,
@@ -120,42 +112,38 @@
       "field_type": "text"
     },
     {
-      "sort": 20,
-      "name": "Run Lavalink locally",
-      "description": "If true, the bot will download and run Lavalink.jar inside the container (requires Java, which the install script provides).",
+      "name": "Run Local Lavalink",
+      "description": "If true, the bot downloads and runs Lavalink.jar inside the container.",
       "env_variable": "RUN_LOCAL_LAVALINK",
       "default_value": "true",
       "user_viewable": true,
       "user_editable": true,
-      "rules": "required|in:true,false",
+      "rules": "required|string|in:true,false",
       "field_type": "text"
     },
     {
-      "sort": 21,
-      "name": "Connect to local Lavalink",
-      "description": "If true the bot connects to the locally launched Lavalink instance after starting it.",
+      "name": "Connect Local Lavalink",
+      "description": "If true, bot connects to the local Lavalink instance.",
       "env_variable": "CONNECT_LOCAL_LAVALINK",
       "default_value": "true",
       "user_viewable": true,
       "user_editable": true,
-      "rules": "required|in:true,false",
+      "rules": "required|string|in:true,false",
       "field_type": "text"
     },
     {
-      "sort": 22,
-      "name": "Auto-download Lavalink server list",
-      "description": "Fetch a public Lavalink server list if local Lavalink is disabled.",
+      "name": "Auto Download Lavalink Serverlist",
+      "description": "Fetch a public Lavalink server list when local is disabled.",
       "env_variable": "AUTO_DOWNLOAD_LAVALINK_SERVERLIST",
       "default_value": "false",
       "user_viewable": true,
       "user_editable": true,
-      "rules": "required|in:true,false",
+      "rules": "required|string|in:true,false",
       "field_type": "text"
     },
     {
-      "sort": 23,
-      "name": "Lavalink initial RAM (MB)",
-      "description": "JVM -Xms value for the local Lavalink instance.",
+      "name": "Lavalink Initial RAM (MB)",
+      "description": "JVM -Xms value for local Lavalink.",
       "env_variable": "LAVALINK_INITIAL_RAM",
       "default_value": "60",
       "user_viewable": true,
@@ -164,9 +152,8 @@
       "field_type": "text"
     },
     {
-      "sort": 24,
-      "name": "Lavalink RAM limit (MB)",
-      "description": "JVM -Xmx value for the local Lavalink instance.",
+      "name": "Lavalink RAM Limit (MB)",
+      "description": "JVM -Xmx value for local Lavalink.",
       "env_variable": "LAVALINK_RAM_LIMIT",
       "default_value": "200",
       "user_viewable": true,
@@ -175,9 +162,8 @@
       "field_type": "text"
     },
     {
-      "sort": 30,
-      "name": "Last.fm API key",
-      "description": "Optional. Enables Last.fm scrobbling features.",
+      "name": "Last.fm Key",
+      "description": "Optional. Last.fm API key.",
       "env_variable": "LASTFM_KEY",
       "default_value": "",
       "user_viewable": true,
@@ -186,9 +172,8 @@
       "field_type": "text"
     },
     {
-      "sort": 31,
-      "name": "Last.fm API secret",
-      "description": "Optional. Required if LASTFM_KEY is set.",
+      "name": "Last.fm Secret",
+      "description": "Optional. Last.fm API secret.",
       "env_variable": "LASTFM_SECRET",
       "default_value": "",
       "user_viewable": true,
@@ -197,9 +182,8 @@
       "field_type": "text"
     },
     {
-      "sort": 40,
       "name": "Spotify Client ID",
-      "description": "Optional. Required for Spotify link playback if your Lavalink does not include LavaSrc.",
+      "description": "Optional. Spotify API client ID.",
       "env_variable": "SPOTIFY_CLIENT_ID",
       "default_value": "",
       "user_viewable": true,
@@ -208,9 +192,8 @@
       "field_type": "text"
     },
     {
-      "sort": 41,
       "name": "Spotify Client Secret",
-      "description": "Optional. Pairs with SPOTIFY_CLIENT_ID.",
+      "description": "Optional. Spotify API client secret.",
       "env_variable": "SPOTIFY_CLIENT_SECRET",
       "default_value": "",
       "user_viewable": true,
@@ -219,9 +202,8 @@
       "field_type": "text"
     },
     {
-      "sort": 50,
-      "name": "Error report webhook (manual)",
-      "description": "Optional. A Discord webhook URL where users can manually report errors via a button.",
+      "name": "Error Report Webhook",
+      "description": "Optional. Discord webhook URL for manual error reports.",
       "env_variable": "ERROR_REPORT_WEBHOOK",
       "default_value": "",
       "user_viewable": true,
@@ -230,9 +212,8 @@
       "field_type": "text"
     },
     {
-      "sort": 51,
-      "name": "Error report webhook (auto)",
-      "description": "Optional. Webhook URL the bot will automatically post unhandled errors to.",
+      "name": "Auto Error Report Webhook",
+      "description": "Optional. Discord webhook URL for automatic error reports.",
       "env_variable": "AUTO_ERROR_REPORT_WEBHOOK",
       "default_value": "",
       "user_viewable": true,
@@ -241,9 +222,8 @@
       "field_type": "text"
     },
     {
-      "sort": 60,
-      "name": "RPC web server port",
-      "description": "Port for the RPC/Rich-Presence web server (the bot exposes this via Pterodactyl's primary allocation).",
+      "name": "RPC Port",
+      "description": "Port for the RPC web server.",
       "env_variable": "PORT",
       "default_value": "80",
       "user_viewable": true,
