@@ -234,7 +234,7 @@ class HelpCog(commands.Cog, name="Help"):
 
     @commands.cooldown(2, 5, commands.BucketType.user)
     @commands.max_concurrency(1, commands.BucketType.user)
-    @commands.command(hidden=True, name='help', aliases=['help'])
+    @commands.command(hidden=True, name='help', aliases=['h', 'commands', 'cmds'])
     async def _help(self, ctx, *cmd_name):
 
         if cmd_name:

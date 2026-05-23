@@ -2133,11 +2133,11 @@ class Music(commands.Cog):
             self,
             inter: disnake.ApplicationCommandInteraction,
             query: str = commands.Param(
-                name="nome",
+                name="name",
                 description="Song name (full or partial)."
             ),
             case_sensitive: bool = commands.Param(
-                name="nome_exato", default=False,
+                name="exact_name", default=False,
                 description="Search for songs with the exact phrase in the song name instead of word by word.",
 
             )
@@ -2160,7 +2160,7 @@ class Music(commands.Cog):
             self,
             inter: disnake.ApplicationCommandInteraction, *,
             query: str = commands.Param(
-                name="nome",
+                name="name",
                 description="Song name (full or partial).",
                 default=None,
             ),
@@ -2175,7 +2175,7 @@ class Music(commands.Cog):
                 default="no"
             ),
             case_sensitive: bool = commands.Param(
-                name="nome_exato", default=False,
+                name="exact_name", default=False,
                 description="Search for songs with the exact phrase in the song name instead of word by word.",
 
             )
