@@ -5,6 +5,18 @@ This folder contains the deployment artifacts for hosting **Golden IQ MUSIC Bot*
 ## Files
 
 - `egg-golden-iq-music-bot.json` — Pterodactyl egg. Import this from your panel.
+- `start.sh` — runtime start script. The installer copies it to `/home/container/start.sh`; the runtime startup command also self-heals from this file if `/home/container/start.sh` is ever missing, so a partial install or accidental delete can no longer brick the server.
+
+## Troubleshooting: `start.sh: No such file or directory` / exit code 127
+
+If the console loops on:
+
+```
+container~ /home/container/start.sh
+/entrypoint.sh: line 20: /home/container/start.sh: No such file or directory
+```
+
+the install step never finished writing `start.sh`. On the **current egg version** the runtime now self-heals: it will clone the repo (if `GIT_ADDRESS` is set) and restore `start.sh` from `deploy_handlers/start.sh` on the next boot. If you are on an **older egg** that lacks the self-heal startup, just **Reinstall** the server from the panel — that re-runs the installer.
 
 ## One-time setup (admin side)
 
