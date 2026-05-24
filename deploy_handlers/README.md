@@ -26,17 +26,43 @@ This folder contains the deployment artifacts for hosting **Golden IQ MUSIC Bot*
    - **Disk:** 3000 MB (the venv + Lavalink.jar + JDK takes ~1.5 GB)
 5. **Variables** — fill in at least:
    - `TOKEN` — your Discord bot token (required)
-   - `GIT_ADDRESS` — optional, but recommended: a Git URL to your fork. With this set, install/update is just one click.
+   - `GIT_ADDRESS` — **pre-filled** with the official repo
+     (`https://github.com/goldeniq-official/Golden-IQ-MUSIC-Bot-Discord.git`).
+     The installer clones it automatically — **no SFTP upload needed**.
+     Replace this only if you maintain a private fork. For private repos,
+     embed credentials in the URL: `https://<user>:<token>@github.com/...`.
+   - `AUTO_UPDATE` — defaults to `1`. Every restart force-syncs the working
+     tree to the latest commit on `BRANCH`.
    - Everything else has sensible defaults.
 
 ## Updating the bot
 
-Two options:
+By default, every new server uses the official repo + auto-update, so you
+get fresh code on every restart with no action needed. Two options:
 
 - **Manual:** upload changed files via SFTP / file manager, then restart.
-- **Automatic:** set `GIT_ADDRESS` and `AUTO_UPDATE=1`. Every start will `git pull --ff-only`.
+- **Automatic (default):** `GIT_ADDRESS` is pre-filled and `AUTO_UPDATE=1`.
+  Every start the
+  container does `git fetch` + `git reset --hard origin/<BRANCH>`, so the
+  working tree is always force-synced to the latest commit on the configured
+  branch. Any local edits you made to **tracked** files (e.g. `main.py`,
+  `requirements.txt`) will be overwritten — this is intentional, otherwise
+  one accidental SFTP edit silently blocks every future pull. Untracked /
+  gitignored files (`.env`, `local_database/`, `Lavalink.jar`,
+  `application.yml`, `lavalink.ini`, logs) are preserved.
+
+  Look at the server console on boot — you will see one of:
+  - `[update] Already up to date at <sha>.`
+  - `[update] Successfully updated to <sha> (<commit message>).`
+  - `[update] ERROR: ...` — read the message; common causes are a bad
+    `GIT_ADDRESS`, the wrong `BRANCH`, or a private repo that needs a token
+    in the URL (`https://<user>:<token>@github.com/...`).
 
 To skip the (slow) pip install on every start once your venv is warm, set `SKIP_PIP_ON_START=1`.
+
+> If `AUTO_UPDATE=1` reports `WARNING: ... no .git directory found`, the
+> server was created without `GIT_ADDRESS`. Re-install with `GIT_ADDRESS`
+> filled in so the container clones the repo and gains a `.git` folder.
 
 ## Troubleshooting
 
