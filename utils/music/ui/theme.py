@@ -29,6 +29,22 @@ ZW = "​"
 DIVIDER_THIN = "─" * 10
 DIVIDER_DOT = " · "
 
+# Premium skins use a thin accent strip beneath the title to break the
+# embed into a clear "header / body" rhythm without resorting to fields.
+# Uses heavy box-drawing characters from Unicode block U+2500 which are
+# present in every default Discord font (the older ▰▱ variant rendered as
+# empty squares on some Windows installs).
+PREMIUM_ACCENT_BAR = "━" * 28
+
+# Shared image used as the bottom decorative strip on premium skins. The
+# original codebase used it as `set_image` on every player view; we keep
+# it for the premium skins (default / default_progressbar / classic /
+# their static_player twins) so the visual identity stays intact.
+PREMIUM_DECORATIVE_BAR = (
+    "https://cdn.discordapp.com/attachments/554468640942981147/"
+    "1127294696025227367/rainbow_bar3.gif"
+)
+
 # Status accent colors (used for embed.color when a player state should be
 # visually obvious). These deliberately override the guild role color when a
 # strong signal matters (errors, disconnect), and are skipped for the normal

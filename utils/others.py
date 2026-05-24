@@ -452,16 +452,33 @@ async def send_idle_embed(
         except:
             continue
 
-    embed = disnake.Embed(description="**Join a voice channel and request a song here " +
-                                      ("in the post" if is_forum else "in the channel or the conversation below") +
-                                      f" (or click the button below or use the command {cmd} here or in another channel)**\n\n"
-                                      "**You can use a name or a link from a compatible site:**\n"
-                                      "[`Youtube`](<https://www.youtube.com/>), [`Soundcloud`](<https://soundcloud.com/>), " \
-                                      "[`Spotify`](<https://open.spotify.com/>), [`Twitch`](<https://www.twitch.tv/>)",
-                          color=bot.get_color(target.guild.me))
+    # ── Idle / waiting state — premium Spotify-card aesthetic ──────────
+    location = "in the post" if is_forum else "in this channel"
+    embed = disnake.Embed(color=bot.get_color(target.guild.me))
+    embed.set_author(
+        name="Ready to play",
+        icon_url=target.guild.me.display_avatar.replace(size=256).url,
+    )
+    embed.title = "🎧  Waiting for your next song"
+    embed.description = (
+        f"# Pick something to play\n"
+        f"-# Just type the song name or paste a link {location}.\n"
+        f"\n"
+        f"You can also use the {cmd} command or click the **Request a song** button below.\n"
+        f"\n"
+        f"**Supported sources:**\n"
+        f"[YouTube](<https://www.youtube.com/>)   •   "
+        f"[SoundCloud](<https://soundcloud.com/>)   •   "
+        f"[Spotify](<https://open.spotify.com/>)   •   "
+        f"[Twitch](<https://www.twitch.tv/>)"
+    )
 
     if text:
-        embed.description += f"\n\n**LAST ACTION:** {text.replace('**', '')}\n"
+        embed.add_field(
+            name="🕒  Last action",
+            value=text.replace("**", ""),
+            inline=False,
+        )
 
     embed.set_thumbnail(target.guild.me.display_avatar.replace(size=256).url)
 

@@ -1,19 +1,46 @@
 # -*- coding: utf-8 -*-
-"""Default skin with a Unicode progress bar in place of the "ends in" line."""
+"""Default skin with a live Unicode progress bar (Spotify-card premium)."""
 from __future__ import annotations
 
 from os.path import basename
 
 import disnake
 
-from utils.music.converters import music_source_image, time_format
+from utils.music.converters import fix_characters, music_source_image, time_format
 from utils.music.models import LavalinkPlayer
-from utils.music.ui import layout, progress, queue_render, theme
+from utils.music.ui import progress, queue_render, theme
 from utils.music.ui.components import ButtonRowFactory
 from utils.music.ui.emoji_set import e as emoji
 
 
-DECORATIVE_BAR = "https://cdn.discordapp.com/attachments/554468640942981147/1127294696025227367/rainbow_bar3.gif"
+_SOURCE_LABEL = {
+    "youtube": "YouTube",
+    "soundcloud": "SoundCloud",
+    "spotify": "Spotify",
+    "deezer": "Deezer",
+    "twitch": "Twitch",
+    "applemusic": "Apple Music",
+    "bandcamp": "Bandcamp",
+    "http": "Direct stream",
+}
+
+
+def _source_label(source_name: str) -> str:
+    return _SOURCE_LABEL.get(source_name, source_name.title() if source_name else "Live")
+
+
+def _status_header(status: str) -> str:
+    return {"playing": "Now Playing", "paused": "Paused", "stopped": "Idle"}.get(status, status.title())
+
+
+def _footer_text(player: LavalinkPlayer) -> str:
+    parts = [f"🔊  {player.volume}%"]
+    if player.loop: parts.append("🔁 Loop on")
+    if player.autoplay: parts.append("🔄 Autoplay")
+    if player.nightcore: parts.append("🎚 Nightcore")
+    if player.keep_connected: parts.append("♾ 24/7")
+    if player.restrict_mode: parts.append("🔐 DJ-only")
+    return "   •   ".join(parts)
 
 
 class DefaultProgressbarSkin:
@@ -22,7 +49,7 @@ class DefaultProgressbarSkin:
 
     def __init__(self):
         self.name = basename(__file__)[:-3]
-        self.preview = "https://i.ibb.co/683gh83/image.png"
+        self.preview = "https://i.ibb.co/2yhVZRJ/default-progressbar.png"
 
     def setup_features(self, player: LavalinkPlayer):
         player.mini_queue_feature = True
@@ -36,80 +63,80 @@ class DefaultProgressbarSkin:
 
         status = theme.status_for_player(player)
         color = theme.resolve_color(player.bot, player.guild, status)
+        source = player.current.info.get("sourceName", "")
 
         embed = disnake.Embed(color=color)
         embed.set_author(
-            name=theme.author_for_status(status)[0],
-            icon_url=music_source_image(player.current.info["sourceName"]),
+            name=f"{_status_header(status)}   •   {_source_label(source)}",
+            icon_url=music_source_image(source),
         )
 
+        embed.title = fix_characters(player.current.single_title, 90)
+        embed.url = player.current.uri or player.current.search_uri
+
+        lines: list[str] = [f"# {player.current.author}"]
+
+        if player.current.album_name:
+            album_text = fix_characters(player.current.album_name, 60)
+            if player.current.album_url:
+                lines.append(f"-# from [{album_text}]({player.current.album_url})")
+            else:
+                lines.append(f"-# from {album_text}")
+
+        lines.append("")
+
         if player.current.is_stream:
-            position_line = f"`{progress.FILLED_CHAR * 18}` ⠂ `🔴 LIVE`"
+            lines.append(f"{emoji('live')}   `{progress.FILLED_CHAR * 22}`   `LIVE`")
         else:
-            bar = progress.render_unicode_bar(player.position, player.current.duration, width=18)
-            position_line = (
-                f"`{bar}` ⠂ `{time_format(player.position)} / {time_format(player.current.duration)}`"
+            bar = progress.render_unicode_bar(player.position, player.current.duration, width=22)
+            lines.append(
+                f"`{bar}`   `{time_format(player.position)} / {time_format(player.current.duration)}`"
             )
 
-        rows: list[tuple[str, str]] = [(emoji("person"), player.current.authors_md)]
+        meta_parts: list[str] = []
         if not player.current.autoplay:
-            rows.append((emoji("request"), f"<@{player.current.requester}>"))
+            meta_parts.append(f"{emoji('request')} <@{player.current.requester}>")
         else:
             related_url = player.current.info.get("extra", {}).get("related", {}).get("uri")
-            rows.append((emoji("recommendation"), f"[`Recommended`]({related_url})" if related_url else "`Recommended`"))
-
-        extra_lines: list[str] = []
-        if player.current.track_loops:
-            extra_lines.append(layout.compact_field(emoji("loop_one"), "Loops left", f"`{player.current.track_loops}`"))
-        if player.loop:
-            extra_lines.append(layout.compact_field(
-                emoji("loop_one") if player.loop == "current" else emoji("loop"),
-                "Loop",
-                "`Current song`" if player.loop == "current" else "`Queue`",
-            ))
-        if player.current.album_name:
-            extra_lines.append(
-                layout.compact_field(emoji("album"), "Album",
-                                     layout.link(f"`{layout.truncate(player.current.album_name, 36)}`", player.current.album_url))
+            meta_parts.append(
+                f"{emoji('recommendation')} [Recommended]({related_url})" if related_url else f"{emoji('recommendation')} Recommended"
             )
+
+        qsize = len(player.queue)
+        if qsize and not player.mini_queue_enabled:
+            meta_parts.append(f"{emoji('queue')} {qsize} in queue")
         if player.current.playlist_name:
-            extra_lines.append(
-                layout.compact_field(emoji("playlist"), "Playlist",
-                                     layout.link(f"`{layout.truncate(player.current.playlist_name, 36)}`", player.current.playlist_url))
-            )
-        if (qlen := len(player.queue)) and not player.mini_queue_enabled:
-            extra_lines.append(layout.compact_field(emoji("queue"), "In queue", f"`{qlen} song{'s'[:qlen ^ 1]}`"))
-        if player.keep_connected:
-            extra_lines.append(layout.compact_field(emoji("infinity"), "24/7 mode", "`Enabled`"))
+            pl_text = fix_characters(player.current.playlist_name, 26)
+            if player.current.playlist_url:
+                meta_parts.append(f"{emoji('playlist')} [{pl_text}]({player.current.playlist_url})")
+            else:
+                meta_parts.append(f"{emoji('playlist')} {pl_text}")
 
-        title_line = f"## [`{player.current.single_title}`]({player.current.uri or player.current.search_uri})"
-        sections = [theme.status_accent_line(player), title_line, position_line, layout.vertical_stack(rows)]
-        accordion = layout.accordion_text(extra_lines, visible=3, hidden_label="more")
-        if accordion:
-            sections.append(accordion)
+        if meta_parts:
+            lines.append("")
+            lines.append("   •   ".join(meta_parts))
 
         if player.command_log:
-            sections.append(f"> -# {player.command_log_emoji} **Last action ⠂** {player.command_log}")
+            lines.append("")
+            lines.append(f"{player.command_log_emoji}   *{player.command_log}*")
 
-        embed.description = "\n".join(sections)
-        embed.set_thumbnail(url=player.current.thumb)
-        embed.set_image(url=DECORATIVE_BAR)
+        embed.description = "\n".join(lines)
+        embed.set_image(url=player.current.thumb)
 
         if player.current_hint:
-            embed.set_footer(text=f"{emoji('tip')} Tip: {player.current_hint}")
+            embed.set_footer(text=f"{emoji('tip')}   {player.current_hint}")
         else:
-            embed.set_footer(text=str(player), icon_url="https://i.ibb.co/QXtk5VB/neon-circle.gif")
+            embed.set_footer(text=_footer_text(player))
 
         embed_queue = None
         if player.mini_queue_enabled:
             queue_text, is_rec = queue_render.render_queue_lines(player, max_items=5, format="compact")
             if queue_text:
-                title = "Next up — recommended:" if is_rec else f"Next in queue · {len(player.queue)}"
+                title = "Up next  •  Recommended" if is_rec else f"Up next  •  {qsize}"
                 embed_queue = disnake.Embed(title=title, color=color, description=queue_text)
                 eta = queue_render.render_queue_footer_eta(player)
                 if eta:
-                    embed_queue.description += f"\n{eta}"
-                embed_queue.set_image(url=DECORATIVE_BAR)
+                    embed_queue.description += f"\n\n{eta}"
 
         data["embeds"] = [embed_queue, embed] if embed_queue else [embed]
 

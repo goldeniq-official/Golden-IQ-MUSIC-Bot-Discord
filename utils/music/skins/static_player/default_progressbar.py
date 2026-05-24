@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Default static skin with a Unicode progress bar."""
+"""Default static skin with a live progress bar (Spotify-card premium)."""
 from __future__ import annotations
 
 import itertools
@@ -9,12 +9,21 @@ import disnake
 
 from utils.music.converters import fix_characters, music_source_image, time_format
 from utils.music.models import LavalinkPlayer
-from utils.music.ui import layout, progress, queue_render, theme
+from utils.music.ui import progress, queue_render, theme
 from utils.music.ui.components import ButtonRowFactory
 from utils.music.ui.emoji_set import e as emoji
 
 
-_FALLBACK_BG = "https://media.discordapp.net/attachments/480195401543188483/987830071815471114/musicequalizer.gif"
+_SOURCE_LABEL = {
+    "youtube": "YouTube",
+    "soundcloud": "SoundCloud",
+    "spotify": "Spotify",
+    "deezer": "Deezer",
+    "applemusic": "Apple Music",
+    "bandcamp": "Bandcamp",
+    "twitch": "Twitch",
+    "http": "Direct stream",
+}
 
 
 class DefaultProgressbarStaticSkin:
@@ -37,81 +46,87 @@ class DefaultProgressbarStaticSkin:
 
         status = theme.status_for_player(player)
         color = theme.resolve_color(player.bot, player.guild, status)
+        source = player.current.info.get("sourceName", "")
+        source_label = _SOURCE_LABEL.get(source, source.title() if source else "Live")
+        status_label = {"playing": "Now Playing", "paused": "Paused"}.get(status, status.title())
 
         embed = disnake.Embed(color=color)
         embed.set_author(
-            name=theme.author_for_status(status)[0],
-            icon_url=music_source_image(player.current.info["sourceName"]),
+            name=f"{status_label}   •   {source_label}",
+            icon_url=music_source_image(source),
         )
+        embed.title = fix_characters(player.current.single_title, 90)
+        embed.url = player.current.uri or player.current.search_uri
 
-        title_line = f"## [`{player.current.single_title}`]({player.current.uri or player.current.search_uri})"
+        lines: list[str] = [f"# {player.current.author}"]
+
+        if player.current.album_name:
+            album_text = fix_characters(player.current.album_name, 60)
+            if player.current.album_url:
+                lines.append(f"-# from [{album_text}]({player.current.album_url})")
+            else:
+                lines.append(f"-# from {album_text}")
+
+        lines.append("")
 
         if player.current.is_stream:
-            position_line = f"`{progress.FILLED_CHAR * 22}` ⠂ `🔴 LIVE`"
+            lines.append(f"{emoji('live')}   `{progress.FILLED_CHAR * 22}`   `LIVE`")
         else:
             bar = progress.render_unicode_bar(player.position, player.current.duration, width=22)
-            position_line = (
-                f"`{bar}` ⠂ `{time_format(player.position)} / {time_format(player.current.duration)}`"
+            lines.append(
+                f"`{bar}`   `{time_format(player.position)} / {time_format(player.current.duration)}`"
             )
 
-        rows: list[tuple[str, str]] = [(emoji("person"), f"**⠂By:** {player.current.authors_md}")]
+        meta_parts: list[str] = []
         if not player.current.autoplay:
-            rows.append((emoji("request"), f"**⠂Requested by:** <@{player.current.requester}>"))
+            meta_parts.append(f"{emoji('request')} <@{player.current.requester}>")
         else:
             related_url = player.current.info.get("extra", {}).get("related", {}).get("uri")
-            label = f"[`Recommendation`]({related_url})" if related_url else "`Recommendation`"
-            rows.append((emoji("recommendation"), f"**⠂Added via:** {label}"))
-
-        extra_lines: list[str] = []
-        if player.current.track_loops:
-            extra_lines.append(layout.compact_field(emoji("loop_one"), "Loops left", f"`{player.current.track_loops}`"))
-        if player.loop:
-            extra_lines.append(layout.compact_field(
-                emoji("loop_one") if player.loop == "current" else emoji("loop"),
-                "Loop",
-                "`Current song`" if player.loop == "current" else "`Queue`",
-            ))
-        if player.current.album_name:
-            extra_lines.append(
-                layout.compact_field(emoji("album"), "Album",
-                                     layout.link(f"`{layout.truncate(player.current.album_name, 20)}`", player.current.album_url))
-            )
-        if player.current.playlist_name:
-            extra_lines.append(
-                layout.compact_field(emoji("playlist"), "Playlist",
-                                     layout.link(f"`{layout.truncate(player.current.playlist_name, 20)}`", player.current.playlist_url))
-            )
-        if player.keep_connected:
-            extra_lines.append(layout.compact_field(emoji("infinity"), "24/7 Mode", "`Enabled`"))
+            meta_parts.append(f"{emoji('recommendation')} [Recommended]({related_url})" if related_url else f"{emoji('recommendation')} Recommended")
         try:
-            extra_lines.append(layout.compact_field("*️⃣", "Voice channel", player.guild.me.voice.channel.mention))
+            meta_parts.append(f"🔊 {player.guild.me.voice.channel.mention}")
         except AttributeError:
             pass
+        if player.loop:
+            meta_parts.append("🔂 Loop song" if player.loop == "current" else "🔁 Loop queue")
+        if player.current.track_loops:
+            meta_parts.append(f"🔂 {player.current.track_loops} loop(s) left")
+        if player.keep_connected:
+            meta_parts.append("♾ 24/7")
+        if player.current.playlist_name:
+            pl_text = fix_characters(player.current.playlist_name, 26)
+            if player.current.playlist_url:
+                meta_parts.append(f"{emoji('playlist')} [{pl_text}]({player.current.playlist_url})")
+            else:
+                meta_parts.append(f"{emoji('playlist')} {pl_text}")
 
-        sections = [theme.status_accent_line(player), title_line, position_line, layout.vertical_stack(rows)]
-        accordion = layout.accordion_text(extra_lines, visible=4, hidden_label="more")
-        if accordion:
-            sections.append(accordion)
+        if meta_parts:
+            lines.append("")
+            lines.append("   •   ".join(meta_parts))
 
         if player.command_log:
-            sections.append(f"> -# {player.command_log_emoji} **Last action ⠂** {player.command_log}")
+            lines.append("")
+            lines.append(f"{player.command_log_emoji}   *{player.command_log}*")
 
-        embed.description = "\n".join(sections)
-        embed.set_image(url=player.current.thumb or _FALLBACK_BG)
+        embed.description = "\n".join(lines)
+        embed.set_image(url=player.current.thumb)
 
         if player.current_hint:
-            embed.set_footer(text=f"{emoji('tip')} Tip: {player.current_hint}")
+            embed.set_footer(text=f"{emoji('tip')}   {player.current_hint}")
         else:
-            embed.set_footer(text=str(player), icon_url="https://i.ibb.co/QXtk5VB/neon-circle.gif")
+            parts = [f"🔊  {player.volume}%"]
+            if player.autoplay: parts.append("🔄 Autoplay")
+            if player.nightcore: parts.append("🎚 Nightcore")
+            embed.set_footer(text="   •   ".join(parts))
 
         queue_text, is_rec = queue_render.render_queue_lines(player, max_items=8, format="detailed")
         embed_queue = None
         if queue_text:
-            title = "Next recommended songs:" if is_rec else f"Songs in queue: {len(player.queue)}"
+            title = "Up next  •  Recommended" if is_rec else f"Up next  •  {len(player.queue)}"
             embed_queue = disnake.Embed(title=title, color=color, description=queue_text)
             eta = queue_render.render_queue_footer_eta(player)
             if eta:
-                embed_queue.description += f"\n{eta}"
+                embed_queue.description += f"\n\n{eta}"
 
         data["embeds"] = [embed_queue, embed] if embed_queue else [embed]
 
@@ -129,7 +144,7 @@ class DefaultProgressbarStaticSkin:
         if (queue := player.queue or player.queue_autoplay):
             data["components"].append(
                 disnake.ui.Select(
-                    placeholder="Next songs:",
+                    placeholder="Jump to a queued song:",
                     custom_id="musicplayer_queue_dropdown",
                     min_values=0,
                     max_values=1,
