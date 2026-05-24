@@ -225,12 +225,20 @@ def run_lavalink(
 
     clear_plugins = False
 
-    for filename, url in (
-        ("Lavalink.jar", lavalink_file_url),
-        ("application.yml", "https://github.com/zRitsu/LL-binaries/releases/download/0.0.1/application.yml")
-    ):
-        if download_file(url, filename):
+    if not os.path.isfile("application.yml"):
+        template_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "application.yml.example")
+        if os.path.isfile(template_path):
+            shutil.copyfile(template_path, "application.yml")
+            print("application.yml created from application.yml.example template.")
             clear_plugins = True
+        else:
+            raise FileNotFoundError(
+                "application.yml is missing and the bundled template "
+                "(application.yml.example) was not found in the project root."
+            )
+
+    if download_file(lavalink_file_url, "Lavalink.jar"):
+        clear_plugins = True
 
     if lavalink_cpu_cores >= 1:
         java_cmd += f" -XX:ActiveProcessorCount={lavalink_cpu_cores}"

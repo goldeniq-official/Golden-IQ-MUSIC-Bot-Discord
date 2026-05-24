@@ -589,14 +589,20 @@ class BotPool:
             except Exception:
                 traceback.print_exc()
                 ini_file = "auto_lavalink.ini"
-                print(f"Downloading Lavalink server list (file: {ini_file})")
-                try:
-                    r = requests.get(self.config["LAVALINK_SERVER_LIST"], allow_redirects=False)
-                    with open("auto_lavalink.ini", 'wb') as f:
-                        f.write(r.content)
-                    r.close()
-                except Exception:
-                    traceback.print_exc()
+                if not self.config["LAVALINK_SERVER_LIST"]:
+                    print(
+                        "AUTO_DOWNLOAD_LAVALINK_SERVERLIST is enabled but "
+                        "LAVALINK_SERVER_LIST is empty — skipping download."
+                    )
+                else:
+                    print(f"Downloading Lavalink server list (file: {ini_file})")
+                    try:
+                        r = requests.get(self.config["LAVALINK_SERVER_LIST"], allow_redirects=False)
+                        with open("auto_lavalink.ini", 'wb') as f:
+                            f.write(r.content)
+                        r.close()
+                    except Exception:
+                        traceback.print_exc()
         else:
             ini_file = "lavalink.ini"
 
@@ -937,9 +943,9 @@ class BotPool:
             if os.environ.get("REPL_SLUG"):
                 message += f"Check if the token was added in the Replit secrets"
 
-                print(message + ": Setup guide: https://gist.github.com/zRitsu/70737984cbe163f890dae05a80a3ddbe#2---com-o-projeto-j%C3%A1-criado-prossiga-as-etapas-abaixo")
+                print(message + ": Setup guide: https://github.com/goldeniq-official/Golden-IQ-MUSIC-Bot-Discord/wiki")
 
-                message += f'. <a href="https://gist.github.com/zRitsu/70737984cbe163f890dae05a80a3ddbe#2---com-o-projeto-j%C3%A1-criado-prossiga-as-etapas-abaixo" target="_blank">Click here</a> to see the setup guide.'
+                message += f'. <a href="https://github.com/goldeniq-official/Golden-IQ-MUSIC-Bot-Discord/wiki" target="_blank">Click here</a> to see the setup guide.'
 
             else:
                 message += " Check if the token was configured in the ENV/ENVIRONMENT or in the .env file"
@@ -1362,7 +1368,7 @@ class BotCore(commands.AutoShardedBot):
                   "as a public bot\n" \
                   "Note that if the bot is publicly distributed to be added by others, it must " \
                   "comply with the conditions of the GPL-2 license: " \
-                  "https://github.com/zRitsu/MuseHeart-MusicBot/blob/main/LICENSE\n" \
+                  "https://github.com/goldeniq-official/Golden-IQ-MUSIC-Bot-Discord/blob/main/LICENSE\n" \
                   "If you do not wish to follow the license conditions for your bot, you can make the bot private by unchecking the " \
                   f"public bot option at: https://discord.com/developers/applications/{self.user.id}/bot"
 

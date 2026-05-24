@@ -4,7 +4,7 @@
 
 ### Some Previews:
 
-- Player controller: normal/mini-player mode (skin: default) with [RPC (Rich Presence)](https://github.com/zRitsu/MuseHeart-MusicBot-RPC-app) support
+- Player controller: normal/mini-player mode (skin: default) with [RPC (Rich Presence)](https://github.com/goldeniq-official/Golden-IQ-MUSIC-Bot-Discord) support
 
 [![](https://i.ibb.co/6tVbfFH/image.png)](https://i.ibb.co/6tVbfFH/image.png)
 
@@ -55,10 +55,10 @@ Hosting on your own PC/VPS (Windows/Linux)
 
 ### Starting the bot (quick guide):
 
-- Download this source as a [zip](https://github.com/zRitsu/MuseHeart-MusicBot/archive/refs/heads/main.zip) and extract it (or use the command below in your terminal/cmd and open the folder):
+- Download this source as a [zip](https://github.com/goldeniq-official/Golden-IQ-MUSIC-Bot-Discord/archive/refs/heads/main.zip) and extract it (or use the command below in your terminal/cmd and open the folder):
 
 ```shell
-git clone https://github.com/zRitsu/MuseHeart-MusicBot.git
+git clone https://github.com/goldeniq-official/Golden-IQ-MUSIC-Bot-Discord.git
 ```
 
 - Double-click the file `source_setup.sh` (or just `setup` if Windows is hiding file extensions) and wait.</br>
@@ -92,7 +92,7 @@ bash source_update.sh
 
 ---
 
-Note: there are more guides on the [wiki](https://github.com/zRitsu/MuseHeart-MusicBot/wiki).
+Note: there are more guides on the [wiki](https://github.com/goldeniq-official/Golden-IQ-MUSIC-Bot-Discord/wiki).
 
 ### Important notes:
 
@@ -106,7 +106,7 @@ Note: there are more guides on the [wiki](https://github.com/zRitsu/MuseHeart-Mu
 
 ---
 
-### If you encounter any issues, please open an [issue](https://github.com/zRitsu/MuseHeart-MusicBot/issues) describing the problem.
+### If you encounter any issues, please open an [issue](https://github.com/goldeniq-official/Golden-IQ-MUSIC-Bot-Discord/issues) describing the problem.
 
 ## Special thanks and credits:
 
@@ -114,5 +114,5 @@ Note: there are more guides on the [wiki](https://github.com/zRitsu/MuseHeart-Mu
 - [Pythonista Guild](https://github.com/PythonistaGuild) (wavelink)
 - [Lavalink-Devs](https://github.com/lavalink-devs) (lavalink and lavaplayer)
 - [DarrenOfficial](https://lavalink-list.darrennathanael.com/) Lavalink server list (Users who published their lavalink servers are listed in the about command along with their website/link).
-- And to all members who helped greatly with bug reports (via [issues](https://github.com/zRitsu/MuseHeart-MusicBot/issues) and on the Discord server)
-- Additional attributions can be found in the [dependency graph](https://github.com/zRitsu/MuseHeart-MusicBot/network/dependencies)
+- And to all members who helped greatly with bug reports (via [issues](https://github.com/goldeniq-official/Golden-IQ-MUSIC-Bot-Discord/issues) and on the Discord server)
+- Additional attributions can be found in the [dependency graph](https://github.com/goldeniq-official/Golden-IQ-MUSIC-Bot-Discord/network/dependencies)

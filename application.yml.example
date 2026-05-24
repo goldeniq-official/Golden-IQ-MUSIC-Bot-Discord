@@ -1,0 +1,216 @@
+server: # REST and WS server
+  port: 8090
+  address: 127.0.0.1
+  http2:
+    enabled: false # Whether to enable HTTP/2 support
+      
+lavalink:
+  plugins:
+    - dependency: "dev.lavalink.youtube:youtube-plugin:023666c35a4789299146551a10440a3ca9c05518"
+      snapshot: true # Set to true if you want to use a snapshot version.
+
+    - dependency: "com.github.topi314.lavasrc:lavasrc-plugin:33f100e"
+      snapshot: true # set to true if you want to use snapshot builds (see below)
+
+    - dependency: "dev.schlaubi.lyrics:lavalink:2.6.1"
+      snapshot: false # set to true if you want to use snapshot builds (see below)
+
+    #- dependency: "me.duncte123:java-lyrics-plugin:1.6.5"
+    #  snapshot: false
+
+  server:
+    password: "youshallnotpass"
+    sources:
+      youtube: false
+      bandcamp: true
+      soundcloud: true
+      twitch: true
+      vimeo: true
+      nico: true
+      http: true
+      local: false
+    filters: # All filters are enabled by default
+      volume: true
+      equalizer: true
+      karaoke: true
+      timescale: true
+      tremolo: true
+      vibrato: true
+      distortion: true
+      rotation: true
+      channelMix: true
+      lowPass: true
+    bufferDurationMs: 400 # The duration of the NAS buffer. Higher values fare better against longer GC pauses. Duration <= 0 to disable JDA-NAS. Minimum of 40ms, lower values may introduce pauses.
+    frameBufferDurationMs: 5000 # How many milliseconds of audio to keep buffered
+    opusEncodingQuality: 10 # Opus encoder quality. Valid values range from 0 to 10, where 10 is best quality but is the most expensive on the CPU.
+    resamplingQuality: LOW # Quality of resampling operations. Valid values are LOW, MEDIUM and HIGH, where HIGH uses the most CPU.
+    trackStuckThresholdMs: 10000 # The threshold for how long a track can be stuck. A track is stuck if does not return any audio data.
+    useSeekGhosting: true # Seek ghosting is the effect where whilst a seek is in progress, the audio buffer is read from until empty, or until seek is ready.
+    youtubePlaylistLoadLimit: 6 # Number of pages at 100 each
+    playerUpdateInterval: 5 # How frequently to send player updates to clients, in seconds
+    youtubeSearchEnabled: true
+    soundcloudSearchEnabled: true
+    gc-warnings: true
+    #ratelimit:
+      #ipBlocks: ["1.0.0.0/8", "..."] # list of ip blocks
+      #excludedIps: ["...", "..."] # ips which should be explicit excluded from usage by lavalink
+      #strategy: "RotateOnBan" # RotateOnBan | LoadBalance | NanoSwitch | RotatingNanoSwitch
+      #searchTriggersFail: true # Whether a search 429 should trigger marking the ip as failing
+      #retryLimit: -1 # -1 = use default lavaplayer value | 0 = infinity | >0 = retry will happen this numbers times
+    #youtubeConfig: # Required for avoiding all age restrictions by YouTube, some restricted videos still can be played without.
+      #email: "" # Email of Google account
+      #password: "" # Password of Google account
+    #httpConfig: # Useful for blocking bad-actors from ip-grabbing your music node and attacking it, this way only the http proxy will be attacked
+      #proxyHost: "localhost" # Hostname of the proxy, (ip or domain)
+      #proxyPort: 3128 # Proxy port, 3128 is the default for squidProxy
+      #proxyUser: "" # Optional user for basic authentication fields, leave blank if you don't use basic auth
+      #proxyPassword: "" # Password for basic authentication
+
+plugins:
+  youtube:
+    enabled: true # Whether this source can be used.
+    allowSearch: true # Whether "ytsearch:" and "ytmsearch:" can be used.
+    allowDirectVideoIds: true # Whether just video IDs can match. If false, only complete URLs will be loaded.
+    allowDirectPlaylistIds: true # Whether just playlist IDs can match. If false, only complete URLs will be loaded.
+    # The clients to use for track loading. See below for a list of valid clients.
+    # Clients are queried in the order they are given (so the first client is queried first and so on...)
+    oauth: # Read https://github.com/lavalink-devs/youtube-source?tab=readme-ov-file#using-oauth-tokens for more information
+      enabled: true
+      skipInitialization: false # Set to true if you got your refresh token
+      refreshToken: "" # Fill out after u got the refresh token
+    clients:
+      - MUSIC
+      - ANDROID_VR
+      - ANDROID_MUSIC
+      - WEB
+      - WEBEMBEDDED
+      - TV
+      - TVHTML5EMBEDDED
+      - MWEB
+    clientOptions:
+      WEBEMBEDDED:
+        playback: true
+        searching: false
+        playlistLoading: false
+      ANDROID:
+        playback: false
+        playlistLoading: false
+      IOS:
+        playback: false
+        playlistLoading: false
+        searching: false
+      TV:
+        playback: true
+        playlistLoading: false
+        searching: false
+      TVHTML5EMBEDDED:
+        playback: false
+        playlistLoading: false
+      ANDROID_MUSIC:
+        playback: false
+        searching: false
+        playlistLoading: false
+      ANDROID_VR:
+        playback: true
+        playlistLoading: false
+      MWEB:
+        playback: false
+        playlistLoading: true
+        searching: false
+      WEB:
+        playback: true
+    remoteCipher:
+      url: "https://cipher.kikkia.dev/api" # The base URL of your remote cipher server.
+      password: "" # The password to authenticate with your remote cipher server.
+  dunctebot:
+    ttsLanguage: "pt-BR" # language of the TTS engine
+    sources:
+      # true = source enabled, false = source disabled
+      getyarn: true # www.getyarn.io
+      clypit: true # www.clyp.it
+      tts: true # speak:Words to speak
+      pornhub: false # should be self-explanatory
+      reddit: true # should be self-explanatory
+      ocremix: true # www.ocremix.org
+      tiktok: true # tiktok.com
+      mixcloud: true # mixcloud.com
+      soundgasm: true # soundgasm.net
+  lavasrc:
+    providers: # Custom providers for track loading. This is the default
+    - "bcsearch:%QUERY%" # Bandcamp search provider
+    - "scsearch:%QUERY%"
+    - "ytsearch:%QUERY%"   # Will be used if track has no ISRC or no track r
+    sources:
+      spotify: true # Enable Spotify source
+      applemusic: false # Enable Apple Music source
+      deezer: false # Enable Deezer source
+      yandexmusic: false # Enable Yandex Music source
+      flowerytts: false # Enable Flowery TTs source
+      youtube: false # Enable YouTube search source (https://github.com/topi314/LavaSearch)
+      tidal: false
+    spotify:
+      clientId: ""
+      clientSecret: ""
+      countryCode: "BR" # the country code you want to use for filtering the artists top tracks. See https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2
+      playlistLoadLimit: 3 # The number of pages at 100 tracks each
+      albumLoadLimit: 3 # The number of pages at 50 tracks each
+    applemusic:
+      countryCode: "BR" # the country code you want to use for filtering the artists top tracks and language. See https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2
+      mediaAPIToken: "" # apple music api token
+      # or specify an apple music key
+      keyID: "" # your key id
+      teamID: "" # your team id
+      musicKitKey: ""
+      playlistLoadLimit: 6 # The number of pages at 300 tracks each
+      albumLoadLimit: 6 # The number of pages at 300 tracks each
+    deezer:
+      masterDecryptionKey: "" # the master key used for decrypting the deezer tracks. (yes this is not here you need to get it from somewhere else)
+    advancemirroring:
+      enabled: true # Whether to enable the advanced mirroring feature
+      titleThreshold: 50 # The threshold for the title match (50 is the most optimal)
+      authorThreshold: 70 # The threshold for the author match (70 is the most optimal)
+      totalMatchThreshold: 196 # The threshold for the total match (196 is the most optimal)
+      skipSoundCloudGo: true # Whether to skip the SoundCloud Go tracks (preview tracks)
+      levelOnePenalty: 1 # The penalty for the first level
+      levelTwoPenalty: 2 # The penalty for the second level
+      levelThreePenalty: 0.8 # The penalty for the third level
+      sources: # The sources to use for the advanced mirroring
+        - scsearch
+        - jssearch
+        - bcsearch
+  jiosaavn:
+    apiURL: "https://saavn.dev/api" # JioSaavn API URL
+
+metrics:
+  prometheus:
+    enabled: false
+    endpoint: /metrics
+
+sentry:
+  dsn: ""
+  environment: ""
+#  tags:
+#    some_key: some_value
+#    another_key: another_value
+
+logging:
+  file:
+    path: ./.logs/lavalink/
+
+  level:
+    root: INFO
+    lavalink: INFO
+
+  request:
+    enabled: true
+    includeClientInfo: true
+    includeHeaders: false
+    includeQueryString: true
+    includePayload: true
+    maxPayloadLength: 10000
+
+
+  logback:
+    rollingpolicy:
+      max-file-size: 3MB
+      max-history: 30

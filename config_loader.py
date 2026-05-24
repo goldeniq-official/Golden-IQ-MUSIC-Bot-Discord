@@ -23,7 +23,7 @@ DEFAULT_CONFIG = {
     "AUTO_ERROR_REPORT_WEBHOOK": '',
     "INTERACTION_COMMAND_ONLY": False,
     "PRESENCE_INTERVAL": 900,
-    "SOURCE_REPO": "https://github.com/zRitsu/MuseHeart-MusicBot.git",
+    "SOURCE_REPO": "https://github.com/goldeniq-official/Golden-IQ-MUSIC-Bot-Discord.git",
     "SUPPORT_SERVER": "",
     "ADDITIONAL_BOT_IDS": "",
     "INVITE_PERMISSIONS": 332892794064,
@@ -44,7 +44,7 @@ DEFAULT_CONFIG = {
     ### Music System      ###
     #########################
     "AUTO_DOWNLOAD_LAVALINK_SERVERLIST": False,
-    "LAVALINK_SERVER_LIST": "https://gist.githubusercontent.com/zRitsu/c3511e1da0440b94c126769dd40c9d91/raw/lavalink.ini",
+    "LAVALINK_SERVER_LIST": "",
     "LAVALINK_RECONNECT_RETRIES": 30,
     "DEFAULT_SKIN": "default",
     "DEFAULT_STATIC_SKIN": "default",
@@ -100,7 +100,7 @@ DEFAULT_CONFIG = {
     "LAVALINK_INITIAL_RAM": 30,
     "LAVALINK_RAM_LIMIT": 120,
     "LAVALINK_CPU_CORES": 2,
-    "LAVALINK_FILE_URL": "https://github.com/zRitsu/LL-binaries/releases/download/0.0.1/Lavalink.jar",
+    "LAVALINK_FILE_URL": "https://github.com/lavalink-devs/Lavalink/releases/download/4.2.2/Lavalink.jar",
     "SEARCH_PROVIDERS": "scsearch",
     "PREFER_YOUTUBE_NATIVE_PLAYBACK": True,
     "ONLY_USE_NATIVE_SEARCH_PROVIDERS": True,

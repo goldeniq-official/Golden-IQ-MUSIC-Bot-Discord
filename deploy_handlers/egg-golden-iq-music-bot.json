@@ -7,7 +7,7 @@
   "exported_at": "2026-05-23T00:00:00+00:00",
   "name": "Golden IQ MUSIC Bot",
   "author": "info@goldeniq.email",
-  "description": "Discord music bot based on MuseHeart-MusicBot. Supports YouTube, Spotify, SoundCloud, Last.fm, slash commands and Lavalink v3/v4.",
+  "description": "Discord music bot from Golden IQ. Supports YouTube, Spotify, SoundCloud, Last.fm, slash commands and Lavalink v3/v4.",
   "features": null,
   "docker_images": {
     "Python 3.14": "ghcr.io/parkervcp/yolks:python_3.14",

@@ -122,7 +122,7 @@ class IndexHandler(tornado.web.RequestHandler):
                      "getElementById(\"url\").innerHTML = window.location.href.replace(\".replit.dev\", \".replit.dev:443\").replace(\"http\", \"ws\")" \
                      ".replace(\"https\", \"wss\") + \"ws\"}</script></body>"
 
-        msg += f"<p><a href=\"https://github.com/zRitsu/DC-MusicBot-RPC" \
+        msg += f"<p><a href=\"https://github.com/goldeniq-official/Golden-IQ-MUSIC-Bot-Discord" \
               f"/releases\" target=\"_blank\">Download the rich presence app here.</a></p>Link to add in the RPC app: {ws_url}"
 
         if self.config["ENABLE_RPC_AUTH"]:
