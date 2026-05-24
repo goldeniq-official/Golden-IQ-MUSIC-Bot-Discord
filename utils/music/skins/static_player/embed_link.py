@@ -1,16 +1,21 @@
-﻿# -*- coding: utf-8 -*-
-import datetime
+# -*- coding: utf-8 -*-
+"""Embed-link static skin: content-only (no embed), full controls."""
+from __future__ import annotations
+
 import itertools
 from os.path import basename
 
 import disnake
 
-from utils.music.converters import time_format, fix_characters, get_button_style
+from utils.music.converters import fix_characters, time_format
 from utils.music.models import LavalinkPlayer
-from utils.others import PlayerControls
+from utils.music.ui import layout, queue_render, theme
+from utils.music.ui.components import ButtonRowFactory
+from utils.music.ui.emoji_set import e as emoji
 
 
 class EmbedLinkStaticSkin:
+
     __slots__ = ("name", "preview")
 
     def __init__(self):
@@ -25,188 +30,105 @@ class EmbedLinkStaticSkin:
         player.static = True
 
     def load(self, player: LavalinkPlayer) -> dict:
-
-        txt = ""
+        parts: list[str] = []
 
         if player.current_hint:
-            txt += f"\n> -# `💡 Tip: {player.current_hint}`\n"
+            parts.append(f"> -# `{emoji('tip')} Tip: {player.current_hint}`")
 
-        if player.current.is_stream:
-            duration_txt = f"\n> -# 🔴 **⠂Duration:** `Livestream`"
-        else:
-            duration_txt = f"\n> -# ⏰ **⠂Duration:** `{time_format(player.current.duration)}`"
-
-        title = fix_characters(player.current.title) if not player.current.uri else f"[{fix_characters(player.current.title)}]({player.current.uri})"
-
+        # Header
+        title = (
+            f"[{fix_characters(player.current.title)}]({player.current.uri})"
+            if player.current.uri else fix_characters(player.current.title)
+        )
         if player.paused:
-            txt += f"\n> ### ⏸️ ⠂Paused: {title}\n{duration_txt}"
-
+            parts.append(f"> ### {emoji('pause')} ⠂Paused: {title}")
         else:
-            txt += f"\n> ### ▶️ ⠂Now Playing: {title}\n{duration_txt}"
-            if not player.current.is_stream and not player.paused:
-                txt += f" `[`<t:{int((disnake.utils.utcnow() + datetime.timedelta(milliseconds=player.current.duration - player.position)).timestamp())}:R>`]`"
+            parts.append(f"> ### {emoji('play')} ⠂Now Playing: {title}")
 
-        vc_txt = ""
+        # Duration row
+        if player.current.is_stream:
+            parts.append(f"> -# {emoji('live')} **⠂Duration:** `Livestream`")
+        else:
+            duration_line = f"> -# {emoji('clock')} **⠂Duration:** `{time_format(player.current.duration)}`"
+            if not player.paused:
+                marker = queue_render.remaining_time_marker(player.current, position_ms=player.position)
+                duration_line += f" ⠂ ends {marker}"
+            parts.append(duration_line)
 
+        # Attribution + extras
         if not player.current.autoplay:
-            txt += f"\n> -# ✋ **⠂Requested by:** <@{player.current.requester}>\n"
+            parts.append(f"> -# {emoji('request')} **⠂Requested by:** <@{player.current.requester}>")
         else:
-            try:
-                mode = f" [`Recommended Song`](<{player.current.info['extra']['related']['uri']}>)"
-            except:
-                mode = "`Recommended Song`"
-            txt += f"\n> -# 👍 **⠂Added via:** {mode}\n"
+            related_url = player.current.info.get("extra", {}).get("related", {}).get("uri")
+            label = f"[`Recommended Song`](<{related_url}>)" if related_url else "`Recommended Song`"
+            parts.append(f"> -# {emoji('recommendation')} **⠂Added via:** {label}")
 
+        extras: list[str] = []
+        if player.current.playlist_name:
+            extras.append(layout.compact_field(
+                emoji("playlist"), "Playlist",
+                f"[`{fix_characters(player.current.playlist_name) or 'View'}`](<{player.current.playlist_url}>)",
+            ))
+        if player.current.track_loops:
+            extras.append(layout.compact_field(emoji("loop_one"), "Loops left", f"`{player.current.track_loops}`"))
+        elif player.loop == "current":
+            extras.append(layout.compact_field(emoji("loop_one"), "Loop", "`current song`"))
+        elif player.loop == "queue":
+            extras.append(layout.compact_field(emoji("loop"), "Loop", "`queue`"))
         try:
-            vc_txt += f"> -# *️⃣ **⠂Voice channel:** {player.guild.me.voice.channel.mention}\n"
+            extras.append(layout.compact_field("*️⃣", "Voice channel", player.guild.me.voice.channel.mention))
         except AttributeError:
             pass
 
-        if player.current.playlist_name:
-            txt += f"> -# 📑 **⠂Playlist:** [`{fix_characters(player.current.playlist_name) or 'Visualizar'}`](<{player.current.playlist_url}>)\n"
-
-        if player.current.track_loops:
-            txt += f"> -# 🔂 **⠂Remaining loops:** `{player.current.track_loops}`\n"
-
-        elif player.loop:
-            if player.loop == 'current':
-                txt += '> -# 🔂 **⠂Loop:** `current song`\n'
-            else:
-                txt += '> -# 🔁 **⠂Loop:** `queue`\n'
-
-        txt += vc_txt
+        if extras:
+            parts.append(layout.accordion_text(extras, visible=3, hidden_label="more"))
 
         if player.command_log:
-
-            txt += f"> -# {player.command_log_emoji} **⠂Last Interaction:** {player.command_log}\n"
+            parts.append(f"> -# {player.command_log_emoji} **⠂Last Interaction:** {player.command_log}")
 
         if qsize := len(player.queue):
+            queue_text, _ = queue_render.render_queue_lines(player, max_items=5, format="compact")
+            header = f"> -# **Next in queue · {qsize}**" if qsize > 4 else "> -# **Next in queue**"
+            parts.append(header)
+            parts.append(queue_text)
 
-            qtext = "> -# **Songs in queue"
+        data: dict = {"content": "\n".join(parts), "embeds": []}
 
-            if qsize  > 4:
-                qtext += f" [{qsize}]:"
+        data["components"] = ButtonRowFactory.player_controls(player)
+        data["components"].append(
+            ButtonRowFactory.overflow_select(
+                player,
+                include_lyrics=bool(player.current.ytid and player.node.lyric_support),
+                include_miniqueue=False,
+                include_voice_status=isinstance(player.last_channel, disnake.VoiceChannel),
+                include_thread=False,
+            )
+        )
 
-            qtext += "**\n" + "\n".join(
-                                  f"> -# `{(n + 1)} [{time_format(t.duration) if not t.is_stream else '🔴 stream'}]` [`{fix_characters(t.title, 30)}`](<{t.uri}>)"
-                                  for n, t in enumerate(
-                                      itertools.islice(player.queue, 4)))
-
-            txt = f"{qtext}\n{txt}"
-
-        elif len(player.queue_autoplay):
-
-            txt = "**Next recommended songs:**\n" + \
-                              "\n".join(
-                                  f"-# `{(n + 1)} [{time_format(t.duration) if not t.is_stream else '🔴 stream'}]` [`{fix_characters(t.title, 30)}`](<{t.uri}>)"
-                                  for n, t in enumerate(
-                                      itertools.islice(player.queue_autoplay, 4))) + f"\n{txt}"
-
-        data = {
-            "content": txt,
-            "embeds": [],
-            "components": [
-                disnake.ui.Button(emoji="⏯️", custom_id=PlayerControls.pause_resume, style=get_button_style(player.paused)),
-                disnake.ui.Button(emoji="⏮️", custom_id=PlayerControls.back),
-                disnake.ui.Button(emoji="⏹️", custom_id=PlayerControls.stop),
-                disnake.ui.Button(emoji="⏭️", custom_id=PlayerControls.skip),
-                disnake.ui.Button(emoji="<:music_queue:703761160679194734>", custom_id=PlayerControls.queue, disabled=not (player.queue or player.queue_autoplay)),
-                disnake.ui.Select(
-                    placeholder="More options:",
-                    custom_id="musicplayer_dropdown_inter",
-                    min_values=0, max_values=1, required = False,
-                    options=[
-                        disnake.SelectOption(
-                            label="Add song", emoji="<:add_music:588172015760965654>",
-                            value=PlayerControls.add_song,
-                            description="Add a song/playlist to the queue."
-                        ),
-                        disnake.SelectOption(
-                            label="Play from start", emoji="⏪",
-                            value=PlayerControls.seek_to_start,
-                            description="Return the current song to the beginning."
-                        ),
-                        disnake.SelectOption(
-                            label=f"Volume: {player.volume}%", emoji="🔊",
-                            value=PlayerControls.volume,
-                            description="Adjust volume."
-                        ),
-                        disnake.SelectOption(
-                            label="Shuffle", emoji="🔀",
-                            value=PlayerControls.shuffle,
-                            description="Shuffle songs in queue."
-                        ),
-                        disnake.SelectOption(
-                            label="Re-add", emoji="🎶",
-                            value=PlayerControls.readd,
-                            description="Re-add played songs back to queue."
-                        ),
-                        disnake.SelectOption(
-                            label="Loop", emoji="🔁",
-                            value=PlayerControls.loop_mode,
-                            description="Enable/Disable song/queue loop."
-                        ),
-                        disnake.SelectOption(
-                            label=("Disable" if player.nightcore else "Enable") + " nightcore effect", emoji="🇳",
-                            value=PlayerControls.nightcore,
-                            description="Effect that increases speed and pitch of the song."
-                        ),
-                        disnake.SelectOption(
-                            label=("Disable" if player.autoplay else "Enable") + " autoplay", emoji="🔄",
-                            value=PlayerControls.autoplay,
-                            description="Automatic song addition system when queue is empty."
-                        ),
-                        disnake.SelectOption(
-                            label="Last.fm scrobble", emoji="<:Lastfm:1278883704097341541>",
-                            value=PlayerControls.lastfm_scrobble,
-                            description="Enable/disable scrobbling on your last.fm account."
-                        ),
-                        disnake.SelectOption(
-                            label=("Disable" if player.restrict_mode else "Enable") + " restricted mode", emoji="🔐",
-                            value=PlayerControls.restrict_mode,
-                            description="Only DJs/Staff can use restricted commands."
-                        ),
-                    ]
-                ),
-            ]
-        }
-
-        if (queue:=player.queue or player.queue_autoplay):
+        if (queue := player.queue or player.queue_autoplay):
             data["components"].append(
                 disnake.ui.Select(
                     placeholder="Next songs:",
                     custom_id="musicplayer_queue_dropdown",
-                    min_values=0, max_values=1, required = False,
+                    min_values=0,
+                    max_values=1,
+                    required=False,
                     options=[
                         disnake.SelectOption(
-                            label=fix_characters(f"{n+1}. {t.single_title}", 47),
-                            description=fix_characters(f"[{time_format(t.duration) if not t.is_stream else '🔴 Live'}]. {t.authors_string}", 47),
-                            value=f"{n:02d}.{t.title[:96]}"
-                        ) for n, t in enumerate(itertools.islice(queue, 25))
-                    ]
-                )
-            )
-
-        if player.current.ytid and player.node.lyric_support:
-            data["components"][5].options.append(
-                disnake.SelectOption(
-                    label= "View lyrics", emoji="📃",
-                    value=PlayerControls.lyrics,
-                    description="Get current song lyrics."
-                )
-            )
-
-
-        if isinstance(player.last_channel, disnake.VoiceChannel):
-            data["components"][5].options.append(
-                disnake.SelectOption(
-                    label="Automatic status", emoji="📢",
-                    value=PlayerControls.set_voice_status,
-                    description="Configure automatic voice channel status."
+                            label=fix_characters(f"{n + 1}. {t.single_title}", 47),
+                            description=fix_characters(
+                                f"[{time_format(t.duration) if not t.is_stream else '🔴 Live'}]. {t.authors_string}",
+                                47,
+                            ),
+                            value=f"{n:02d}.{t.title[:96]}",
+                        )
+                        for n, t in enumerate(itertools.islice(queue, 25))
+                    ],
                 )
             )
 
         return data
+
 
 def load():
     return EmbedLinkStaticSkin()

@@ -240,7 +240,7 @@ class BotPool:
             await bot.start(bot.http.token)
         except disnake.HTTPException as error:
 
-            if error.status == 429 or "429 Too Many Requests" in str(e):
+            if error.status == 429 or "429 Too Many Requests" in str(error):
 
                 if not self.config["KILL_ON_429"]:
 
@@ -250,7 +250,7 @@ class BotPool:
                     self.killing_state = "ratelimit"
                     print("Application rate-limited by Discord!")
                     await asyncio.sleep(10)
-                    raise e
+                    raise error
 
                 if self.killing_state is True:
                     return
@@ -301,8 +301,17 @@ class BotPool:
             self.failed_bots[bot.identifier] = e
             try:
                 self.bots.remove(bot)
-            except:
+            except ValueError:
                 pass
+
+            # The bot's HTTP client and any pending initial_setup() task were
+            # left dangling — produces "Unclosed client_session" and
+            # "Task was destroyed but it is pending!" warnings on exit.
+            # Tear down everything the bot allocated before its start() failed.
+            try:
+                await bot.close()
+            except Exception:
+                traceback.print_exc()
 
     async def run_bots(self, bots: List[BotCore]):
         await asyncio.gather(
@@ -566,6 +575,11 @@ class BotPool:
 
     def setup(self):
 
+        from utils.music.ui import emoji_set as _ui_emoji_set
+        _ui_emoji_set.set_default(
+            _ui_emoji_set.EmojiSet.from_config(self.config)
+        )
+
         self.load_skins()
 
         if self.config['ENABLE_LOGGER']:
@@ -811,7 +825,7 @@ class BotPool:
                     try:
                         print(
                             f"cmd log: [user: {inter.author} - {inter.author.id}] - [guild: {inter.guild.name} - {inter.guild.id}]"
-                            f" - [cmd: {inter.data.name}] {datetime.datetime.utcnow().strftime('%d/%m/%Y - %H:%M:%S')} (UTC) - {inter.filled_options}\n" + (
+                            f" - [cmd: {inter.data.name}] {datetime.datetime.now(datetime.timezone.utc).strftime('%d/%m/%Y - %H:%M:%S')} (UTC) - {inter.filled_options}\n" + (
                                         "-" * 15))
                     except:
                         traceback.print_exc()
@@ -862,7 +876,7 @@ class BotPool:
 
                     print(
                         f"cmd (prefix) log: [user: {ctx.author} - {ctx.author.id}] - [guild: {ctx.guild.name} - {ctx.guild.id}]"
-                        f" - [cmd: {ctx.message.content}] {datetime.datetime.utcnow().strftime('%d/%m/%Y - %H:%M:%S')} (UTC)\n" + ("-" * 15)
+                        f" - [cmd: {ctx.message.content}] {datetime.datetime.now(datetime.timezone.utc).strftime('%d/%m/%Y - %H:%M:%S')} (UTC)\n" + ("-" * 15)
                     )
 
             @bot.event
@@ -899,7 +913,10 @@ class BotPool:
 
                 bot.bot_ready = True
 
-            bot.loop.create_task(initial_setup())
+            # Track the task so BotCore.close() can cancel it if the bot
+            # never finishes logging in (otherwise wait_until_ready() blocks
+            # forever and the task survives the bot's teardown).
+            bot.initial_setup_task = bot.loop.create_task(initial_setup())
 
             if guild_id:
                 bot.exclusive_guild_id = int(guild_id)
@@ -1000,7 +1017,6 @@ class BotPool:
 class BotCore(commands.AutoShardedBot):
 
     def __init__(self, *args, **kwargs):
-        self.session: Optional[aiohttp.ClientError] = None
         self.pool: BotPool = kwargs.pop('pool')
         self.default_prefix = kwargs.pop("default_prefix", "!!")
         self.session: Optional[aiohttp.ClientSession] = None
@@ -1013,6 +1029,9 @@ class BotCore(commands.AutoShardedBot):
         self.env_owner_ids = set()
         self.dm_cooldown = commands.CooldownMapping.from_cooldown(rate=2, per=30, type=commands.BucketType.member)
         self.number = kwargs.pop("number", 0)
+        # Set by BotPool.setup() after constructing the bot; tracked here so
+        # close() can cancel it on failed-startup teardown.
+        self.initial_setup_task: Optional[asyncio.Task] = None
         super().__init__(*args, **kwargs)
         self.music: wavelink.Client = music_mode(self)
         self.interaction_id: Optional[int] = None
@@ -1035,6 +1054,28 @@ class BotCore(commands.AutoShardedBot):
         r = Route('PUT', '/channels/{channel_id}/voice-status', channel_id=channel_id)
         payload = {'status': status}
         return await self.http.request(r, reason=reason, json=payload)
+
+    async def close(self) -> None:
+        # Cancel the initial_setup task if it's still waiting on
+        # wait_until_ready() (happens when the bot fails to log in — the
+        # task would survive the bot's teardown otherwise).
+        if self.initial_setup_task is not None and not self.initial_setup_task.done():
+            self.initial_setup_task.cancel()
+            try:
+                await self.initial_setup_task
+            except (asyncio.CancelledError, Exception):
+                pass
+
+        # bot.session is created during initial_setup() and lives for the
+        # lifetime of the process. Without this override, aiohttp prints an
+        # "Unclosed client_session" warning on shutdown because nothing closes
+        # the long-lived connector.
+        if self.session is not None and not self.session.closed:
+            try:
+                await self.session.close()
+            except Exception:
+                traceback.print_exc()
+        await super().close()
 
     @property
     def player_skins(self):

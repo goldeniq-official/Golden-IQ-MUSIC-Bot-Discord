@@ -319,8 +319,14 @@ class Player:
                     }
                 }
             except KeyError:
-                pprint.pprint(self._voice_state)
-                traceback.print_exc()
+                # Common during player resume: Discord's VOICE_SERVER_UPDATE
+                # hasn't arrived yet, so the 'event' key is missing. The next
+                # voice_server_update tick will retry — no recovery needed.
+                missing = [k for k in ("sessionId", "event") if k not in self._voice_state]
+                __log__.debug(
+                    f"PLAYER | voice update deferred — waiting for "
+                    f"{', '.join(missing) or 'event'} key for guild {self.guild_id}"
+                )
                 return
 
             await self.node.update_player(self.guild_id, data=data)

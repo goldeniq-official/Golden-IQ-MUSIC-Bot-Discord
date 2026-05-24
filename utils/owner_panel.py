@@ -26,6 +26,14 @@ class PanelCommand(commands.Command):
 
 class PanelView(disnake.ui.View):
 
+    # Component custom_ids. The original misspelled "owner" as "onwer";
+    # NEW_PANEL_SELECT_CID corrects it. LEGACY_PANEL_SELECT_CID is kept as
+    # the actual custom_id so existing persistent panel messages keep working
+    # after this update — renaming would silently break any panel message
+    # that's still sitting in a channel from before the fix.
+    LEGACY_PANEL_SELECT_CID = "onwer_panel_dropdown"
+    NEW_PANEL_SELECT_CID = "owner_panel_dropdown"
+
     def __init__(self, bot: BotCore):
         super().__init__(timeout=None)
         self.bot = bot
@@ -40,10 +48,12 @@ class PanelView(disnake.ui.View):
             opts.append(disnake.SelectOption(label=cmd.alt_name, description=cmd.description, value=cmd.name,
                                              emoji=cmd.emoji))
 
+        # Persistent view: keep the legacy custom_id so existing panel
+        # messages out in the wild stay clickable.
         select = disnake.ui.Select(
             placeholder="Select a task:",
             options=opts,
-            custom_id="onwer_panel_dropdown"
+            custom_id=self.LEGACY_PANEL_SELECT_CID,
         )
 
         select.callback = self.opts_callback
@@ -52,7 +62,11 @@ class PanelView(disnake.ui.View):
 
     async def opts_callback(self, interaction: disnake.MessageInteraction):
 
-        txt = await self.bot.get_command(interaction.data.values[0])(interaction)
+        try:
+            txt = await self.bot.get_command(interaction.data.values[0])(interaction)
+        except Exception:
+            # Re-raise so on_error builds a user-visible error embed.
+            raise
 
         if interaction.response.is_done():
             edit = (await interaction.original_message()).edit

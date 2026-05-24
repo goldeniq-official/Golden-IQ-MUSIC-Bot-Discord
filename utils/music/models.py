@@ -3256,7 +3256,7 @@ class LavalinkPlayer(wavelink.Player):
                     try:
                         result = (await self.node.get_tracks(query, track_cls=LavalinkTrack, playlist_cls=LavalinkPlaylist, check_title = 60 if query.startswith(("ytmsearch", "ytsearch", "scsearch")) else 75))
                     except Exception as e:
-                        if track.info["sourceName"] == "youtube" and any(e in str(e) for e in (
+                        if track.info["sourceName"] == "youtube" and any(msg in str(e) for msg in (
                             "This video is not available",
                             "YouTube WebM streams are currently not supported.",
                             "Video returned by YouTube isn't what was requested",

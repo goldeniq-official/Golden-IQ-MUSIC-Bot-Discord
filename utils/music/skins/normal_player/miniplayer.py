@@ -1,11 +1,33 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
+"""Mini player skin: compact card with the original custom-emoji visual identity.
+
+This skin's transport row uses bespoke server emojis rather than the global
+EmojiSet defaults; the IDs are kept here so the visual identity survives a
+skin refactor. Hosts who want different glyphs can override these names in
+``CUSTOM_EMOJIS`` (see ``utils/music/ui/emoji_set.py``).
+"""
+from __future__ import annotations
+
 from os.path import basename
 
 import disnake
 
 from utils.music.converters import fix_characters, get_button_style, music_source_image
 from utils.music.models import LavalinkPlayer
+from utils.music.ui import theme
+from utils.music.ui.emoji_set import EmojiSet, get_default
 from utils.others import PlayerControls
+
+
+# Per-skin custom-emoji identity. Skin owners can override any of these via
+# the bot-wide ``CUSTOM_EMOJIS`` config; otherwise the IDs below ship.
+_SKIN_EMOJI_OVERRIDES = {
+    "play_pause": "<:playpause:1000648043529519144>",
+    "back": "<:backward:938437126532517928>",
+    "stop": "<:stop:923282526322184212>",
+    "skip": "<:skip:955164528595857488>",
+    "favorite": "🤍",
+}
 
 
 class MiniPlayer:
@@ -24,55 +46,59 @@ class MiniPlayer:
         player.static = False
 
     def load(self, player: LavalinkPlayer) -> dict:
+        data: dict = {"content": None, "embeds": []}
 
-        data = {
-            "content": None,
-            "embeds": [],
-        }
+        status = theme.status_for_player(player)
+        color = theme.resolve_color(player.bot, player.guild, status)
 
-        embed_color = player.bot.get_color(player.guild.me)
+        # Skin-specific emoji resolver — overrides only apply to this skin.
+        es: EmojiSet = get_default().with_overrides(**_SKIN_EMOJI_OVERRIDES)
 
-        embed = disnake.Embed(
-            color=embed_color,
-            description=f"-# [{fix_characters(player.current.single_title, 48)}]({player.current.uri or player.current.search_uri})\n"
-                        f"-# **Uploader:** `{fix_characters(player.current.author, 17)}`\n"
+        lines = [
+            theme.status_accent_line(player),
+            f"## [{fix_characters(player.current.single_title, 48)}]({player.current.uri or player.current.search_uri})",
+            f"-# **Uploader:** `{fix_characters(player.current.author, 17)}`",
+        ]
+
+        if not player.current.autoplay:
+            lines.append(f"-# **Requested by:** <@{player.current.requester}>")
+        else:
+            related_url = player.current.info.get("extra", {}).get("related", {}).get("uri")
+            if related_url:
+                lines.append(f"-# **Added via:** [`[Recommendation]`]({related_url})")
+            else:
+                lines.append("-# **Added via:** `[Recommendation]`")
+
+        if player.command_log:
+            lines.append(f"-# {player.command_log_emoji} ⠂**Last Interaction:** {player.command_log}")
+
+        embed = disnake.Embed(color=color, description="\n".join(lines))
+        embed.set_author(
+            name=theme.author_for_status(status)[0],
+            icon_url=music_source_image(player.current.info["sourceName"]),
         )
-
         if player.current.thumb:
             embed.set_thumbnail(url=player.current.thumb)
 
-        if not player.current.autoplay:
-            embed.description += f"-# **Requested by:** <@{player.current.requester}>\n"
-        else:
-            try:
-                embed.description += f"-# **Added via:** [`[Recommendation]`]({player.current.info['extra']['related']['uri']})\n"
-            except:
-                embed.description += "-# **Added via:** `[Recommendation]`\n"
-
-        embed.set_author(
-            name="Now Playing:",
-            icon_url=music_source_image(player.current.info["sourceName"])
-        )
-
-        if player.command_log:
-            embed.description += f"-# {player.command_log_emoji} ⠂**Last Interaction:** {player.command_log}"
-
         if player.current_hint:
-            embed_hint = disnake.Embed(colour=embed_color)
-            embed_hint.set_footer(text=f"💡 Tip: {player.current_hint}")
-            data["embeds"].append(embed_hint)
+            hint_embed = disnake.Embed(colour=color)
+            hint_embed.set_footer(text=f"💡 Tip: {player.current_hint}")
+            data["embeds"].append(hint_embed)
 
         data["embeds"].append(embed)
 
+        # 5-button transport row, no overflow select — this skin is intentionally
+        # compact. Custom-emoji identity preserved.
         data["components"] = [
-            disnake.ui.Button(emoji="<:playpause:1000648043529519144>", custom_id=PlayerControls.pause_resume, style=get_button_style(player.paused)),
-            disnake.ui.Button(emoji="<:backward:938437126532517928>", custom_id=PlayerControls.back),
-            disnake.ui.Button(emoji="<:stop:923282526322184212>", custom_id=PlayerControls.stop, style=disnake.ButtonStyle.red),
-            disnake.ui.Button(emoji="<:skip:955164528595857488>", custom_id=PlayerControls.skip),
-            disnake.ui.Button(emoji="🤍", custom_id=PlayerControls.add_favorite),
+            disnake.ui.Button(emoji=es("play_pause"), custom_id=PlayerControls.pause_resume, style=get_button_style(player.paused)),
+            disnake.ui.Button(emoji=es("back"), custom_id=PlayerControls.back),
+            disnake.ui.Button(emoji=es("stop"), custom_id=PlayerControls.stop, style=disnake.ButtonStyle.red),
+            disnake.ui.Button(emoji=es("skip"), custom_id=PlayerControls.skip),
+            disnake.ui.Button(emoji=es("favorite"), custom_id=PlayerControls.add_favorite),
         ]
 
         return data
+
 
 def load():
     return MiniPlayer()

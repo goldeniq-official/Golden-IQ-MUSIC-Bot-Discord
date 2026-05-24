@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from json import load
+from json import load, loads, JSONDecodeError
 from os import environ
 
 import disnake
@@ -60,6 +60,12 @@ DEFAULT_CONFIG = {
     "HINT_RATE": 4,
     "IGNORE_SKINS": '',
     "IGNORE_STATIC_SKINS": '',
+    # CUSTOM_EMOJIS — optional dict overriding the default Unicode emoji set
+    # used by the player UI. Keys are emoji names (see utils/music/ui/emoji_set.py
+    # for the full list of supported names); values are either a string like
+    # "<:custom:1234567890>" or a custom-emoji ID as int. Unspecified names
+    # fall back to the Unicode default. Best set in config.json.
+    "CUSTOM_EMOJIS": {},
     "GUILD_DEAFEN_WARN": True,
     "ENABLE_DISCORD_URLS_PLAYBACK": True,
     "PLAYER_INFO_BACKUP_INTERVAL": 45,
@@ -306,5 +312,17 @@ def load_config():
 
     if CONFIG["LAVALINK_RECONNECT_RETRIES"] < 5:
         CONFIG["LAVALINK_RECONNECT_RETRIES"] = 0
+
+    # CUSTOM_EMOJIS may arrive as a JSON string when set through env vars or
+    # dotenv. Parse to dict so the EmojiSet loader gets the right shape.
+    custom_emojis = CONFIG.get("CUSTOM_EMOJIS")
+    if isinstance(custom_emojis, str):
+        try:
+            CONFIG["CUSTOM_EMOJIS"] = loads(custom_emojis) if custom_emojis.strip() else {}
+        except JSONDecodeError as exc:
+            print(f"⚠️ - CUSTOM_EMOJIS is not valid JSON; ignoring. ({exc})")
+            CONFIG["CUSTOM_EMOJIS"] = {}
+    elif not isinstance(custom_emojis, dict):
+        CONFIG["CUSTOM_EMOJIS"] = {}
 
     return CONFIG

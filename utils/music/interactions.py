@@ -35,7 +35,10 @@ class VolumeInteraction(disnake.ui.View):
     def __init__(self, inter):
         self.inter = inter
         self.volume = None
-        super().__init__(timeout=30)
+        self.message: Optional[disnake.Message] = None
+        # 30s was too tight — common case is "I want to adjust volume mid-song
+        # but got distracted for 45 seconds first". 120s leaves room for that.
+        super().__init__(timeout=120)
         self.process_buttons()
 
     def process_buttons(self):
@@ -57,6 +60,18 @@ class VolumeInteraction(disnake.ui.View):
     async def callback(self, interaction: disnake.MessageInteraction):
         await interaction.response.edit_message(content=f"Volume changed!",embed=None, view=None)
         self.volume = int(interaction.data.values[0][4:])
+        self.stop()
+
+    async def on_timeout(self) -> None:
+        # Disable the select so users don't think it's still actionable.
+        for child in self.children:
+            if isinstance(child, (disnake.ui.Select, disnake.ui.Button)):
+                child.disabled = True
+        if self.message is not None:
+            try:
+                await self.message.edit(view=self)
+            except disnake.HTTPException:
+                pass
         self.stop()
 
 
@@ -93,15 +108,22 @@ class QueueInteraction(disnake.ui.View):
 
     async def on_timeout(self) -> None:
 
-        if not self.message:
-            return
-
         self.embed.set_footer(text="Interaction time expired!")
 
         for c in self.children:
-            c.disabled = True
+            if isinstance(c, (disnake.ui.Button, disnake.ui.Select)):
+                c.disabled = True
 
-        await self.message.edit(embed=self.embed, view=self)
+        if self.message:
+            try:
+                await self.message.edit(embed=self.embed, view=self)
+            except disnake.HTTPException:
+                # Message deleted or thread archived — nothing to update.
+                pass
+
+        # Original missed this — view stayed alive after timeout, holding refs
+        # to bot/user objects and blocking the queue-update task on teardown.
+        self.stop()
 
 
     def update_components(self):
@@ -1386,10 +1408,21 @@ class FavMenuView(disnake.ui.View):
         if self.mode == ViewMode.fav_manager:
 
             if self.data["fav_links"]:
+                # Discord select menus cap at 25 options. When the user has
+                # more than that we surface a heads-up in the log line so they
+                # know entries beyond the 25th aren't reachable from this menu
+                # (use the search/edit-by-name flow instead).
+                all_items = list(self.data["fav_links"].items())
                 opts = []
-                for k, v in list(self.data["fav_links"].items())[:25]: # TODO: Lidar depois com os dados existentes que excedem a quantidade permitida
+                for k, v in all_items[:25]:
                     emoji, platform = music_source_emoji_url(v)
                     opts.append(disnake.SelectOption(label=k, emoji=emoji, description=platform))
+                if len(all_items) > 25 and not self.log:
+                    overflow = len(all_items) - 25
+                    self.log = (
+                        f"You have {overflow} more favorite(s) than this menu can show. "
+                        "Use a name search to edit any item beyond the first 25."
+                    )
                 fav_select = disnake.ui.Select(options=opts, min_values=1, max_values=1)
                 fav_select.options[0].default = True
                 self.current = fav_select.options[0].label
@@ -1527,30 +1560,31 @@ class FavMenuView(disnake.ui.View):
 
     async def on_timeout(self):
 
-        try:
-            self.components_updater_task.cancel()
-        except:
-            pass
+        from utils.music.ui.components import cancel_task as _cancel_task
+        _cancel_task(getattr(self, "components_updater_task", None))
 
         try:
             for i in self.children[1].options:
                 i.default = self.current == i.value
-        except:
+        except (AttributeError, IndexError):
+            # children layout depends on mode — second child isn't always a select.
             pass
 
         for c in self.children:
-            c.disabled = True
+            if isinstance(c, (disnake.ui.Button, disnake.ui.Select)):
+                c.disabled = True
 
         if isinstance(self.ctx, CustomContext):
             try:
-                await self.message.edit(view=self)
-            except:
+                if self.message is not None:
+                    await self.message.edit(view=self)
+            except disnake.HTTPException:
                 pass
 
         else:
             try:
                 await self.ctx.edit_original_message(view=self)
-            except:
+            except disnake.HTTPException:
                 pass
 
         self.stop()
@@ -2528,14 +2562,19 @@ class SkinEditorMenu(disnake.ui.View):
 
         if isinstance(self.ctx, CustomContext):
             try:
-                await self.message.edit(view=self)
-            except:
+                if self.message is not None:
+                    await self.message.edit(view=self)
+            except disnake.HTTPException:
                 pass
         else:
             try:
                 await self.ctx.edit_original_message(view=self)
-            except:
+            except disnake.HTTPException:
                 pass
+
+        # Without stop() the view stays alive until the bot restarts, holding
+        # the message + interaction context in memory. Bug missed by original.
+        self.stop()
 
     def build_embeds(self) -> dict:
 

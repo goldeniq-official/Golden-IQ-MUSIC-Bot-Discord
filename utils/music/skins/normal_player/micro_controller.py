@@ -1,10 +1,15 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
+"""Micro controller skin: small embed + 6 labeled buttons."""
+from __future__ import annotations
+
 from os.path import basename
 
 import disnake
 
 from utils.music.converters import fix_characters, get_button_style, music_source_image
 from utils.music.models import LavalinkPlayer
+from utils.music.ui import theme
+from utils.music.ui.emoji_set import e as emoji
 from utils.others import PlayerControls
 
 
@@ -24,53 +29,57 @@ class MicroController:
         player.static = False
 
     def load(self, player: LavalinkPlayer) -> dict:
+        data: dict = {"content": None, "embeds": []}
 
-        data = {
-            "content": None,
-            "embeds": [],
-        }
+        status = theme.status_for_player(player)
+        color = theme.resolve_color(player.bot, player.guild, status)
 
-        embed_color = player.bot.get_color(player.guild.me)
-
-        embed = disnake.Embed(
-            color=embed_color,
-            description=f"-# [`{fix_characters(player.current.single_title, 32)}`]({player.current.uri or player.current.search_uri}) "
-                        f"[`{fix_characters(player.current.author, 12)}`] "
+        body = (
+            f"-# [`{fix_characters(player.current.single_title, 32)}`]({player.current.uri or player.current.search_uri}) "
+            f"[`{fix_characters(player.current.author, 12)}`] "
         )
 
         if not player.current.autoplay:
-            embed.description += f"<@{player.current.requester}>"
+            body += f"<@{player.current.requester}>"
         else:
-            try:
-                embed.description += f"[`[Recommended]`]({player.current.info['extra']['related']['uri']})"
-            except:
-                embed.description += "`[Recommended]`"
-
-        embed.set_author(
-            name="Now Playing:",
-            icon_url=music_source_image(player.current.info["sourceName"])
-        )
+            related_url = player.current.info.get("extra", {}).get("related", {}).get("uri")
+            body += f"[`[Recommended]`]({related_url})" if related_url else "`[Recommended]`"
 
         if player.command_log:
-            embed.description += f"\n\n{player.command_log_emoji} ⠂**Last Interaction:** {player.command_log}"
+            body += f"\n\n{player.command_log_emoji} ⠂**Last Interaction:** {player.command_log}"
+
+        embed = disnake.Embed(color=color, description=body)
+        embed.set_author(
+            name=theme.author_for_status(status)[0],
+            icon_url=music_source_image(player.current.info["sourceName"]),
+        )
 
         if player.current_hint:
-            embed_hint = disnake.Embed(colour=embed_color)
-            embed_hint.set_footer(text=f"💡 Tip: {player.current_hint}")
-            data["embeds"].append(embed_hint)
+            hint_embed = disnake.Embed(colour=color)
+            hint_embed.set_footer(text=f"{emoji('tip')} Tip: {player.current_hint}")
+            data["embeds"].append(hint_embed)
 
         data["embeds"].append(embed)
 
+        # 6 labeled buttons — the Discord layout will wrap to a second row on
+        # narrow displays, which is acceptable for this opt-in compact skin.
+        queue_empty = not (player.queue or player.queue_autoplay)
         data["components"] = [
-            disnake.ui.Button(emoji="⏯️", label="Resume" if player.paused else "Pause", custom_id=PlayerControls.pause_resume, style=get_button_style(player.paused)),
-            disnake.ui.Button(emoji="⏮️", label="Back", custom_id=PlayerControls.back),
-            disnake.ui.Button(emoji="⏹️", label="Stop", custom_id=PlayerControls.stop, style=disnake.ButtonStyle.red),
-            disnake.ui.Button(emoji="⏭️", label="Skip", custom_id=PlayerControls.skip),
-            disnake.ui.Button(emoji="<:music_queue:703761160679194734>", label="Queue", custom_id=PlayerControls.queue,disabled=not (player.queue or player.queue_autoplay)),
-            disnake.ui.Button(emoji="💗", label="Add to your favorites", custom_id=PlayerControls.add_favorite),
+            disnake.ui.Button(
+                emoji=emoji("play_pause"),
+                label="Resume" if player.paused else "Pause",
+                custom_id=PlayerControls.pause_resume,
+                style=get_button_style(player.paused),
+            ),
+            disnake.ui.Button(emoji=emoji("back"), label="Back", custom_id=PlayerControls.back),
+            disnake.ui.Button(emoji=emoji("stop"), label="Stop", custom_id=PlayerControls.stop, style=disnake.ButtonStyle.red),
+            disnake.ui.Button(emoji=emoji("skip"), label="Skip", custom_id=PlayerControls.skip),
+            disnake.ui.Button(emoji=emoji("queue"), label="Queue", custom_id=PlayerControls.queue, disabled=queue_empty),
+            disnake.ui.Button(emoji=emoji("favorite"), label="Favorite", custom_id=PlayerControls.add_favorite),
         ]
 
         return data
+
 
 def load():
     return MicroController()

@@ -5966,7 +5966,9 @@ class Music(commands.Cog):
                     await interaction.edit_original_message(f"**{not_found_msg}**")
                     return
 
-                player.current.info["extra"]["lyrics"]["track"]["albumArt"] = player.current.info["extra"]["lyrics"]["track"]["albumArt"][:-1]
+                album_art = player.current.info["extra"]["lyrics"]["track"].get("albumArt")
+                if album_art:
+                    player.current.info["extra"]["lyrics"]["track"]["albumArt"] = album_art[:-1]
 
                 try:
                     lyrics_string = "\n".join([d['line'] for d in  player.current.info["extra"]["lyrics"]['lines']])
@@ -5978,12 +5980,44 @@ class Music(commands.Cog):
                 except:
                     pass
 
-                await interaction.edit_original_message(
-                    embed=disnake.Embed(
-                        description=f"### Song lyrics: [{player.current.title}](<{player.current.uri}>)\n{lyrics_string}",
-                        color=self.bot.get_color(player.guild.me)
-                    )
-                )
+                # Discord caps embed description at 4096 characters; lyrics
+                # routinely exceed that. Paginate into ~900-char chunks at
+                # blank-line boundaries so each page reads cleanly on mobile.
+                color = self.bot.get_color(player.guild.me)
+                header = f"### Song lyrics: [{player.current.title}](<{player.current.uri}>)"
+
+                LYRIC_PAGE_TARGET = 900
+                if len(lyrics_string) <= LYRIC_PAGE_TARGET:
+                    pages = [lyrics_string]
+                else:
+                    pages = []
+                    current = []
+                    current_len = 0
+                    for paragraph in lyrics_string.split("\n\n"):
+                        if current_len + len(paragraph) + 2 > LYRIC_PAGE_TARGET and current:
+                            pages.append("\n\n".join(current))
+                            current = [paragraph]
+                            current_len = len(paragraph)
+                        else:
+                            current.append(paragraph)
+                            current_len += len(paragraph) + 2
+                    if current:
+                        pages.append("\n\n".join(current))
+
+                lyric_embeds = []
+                for n, page in enumerate(pages, 1):
+                    embed_desc = f"{header}\n{page}"
+                    if len(pages) > 1:
+                        embed_desc += f"\n\n-# Page {n} / {len(pages)}"
+                    lyric_embeds.append(disnake.Embed(description=embed_desc, color=color))
+
+                if len(lyric_embeds) == 1:
+                    await interaction.edit_original_message(embed=lyric_embeds[0])
+                else:
+                    from utils.music.ui.components import Paginator
+                    view = Paginator(interaction.author, embeds=lyric_embeds, timeout=300)
+                    msg = await interaction.edit_original_message(embed=lyric_embeds[0], view=view)
+                    view.message = msg
                 return
 
             if control == PlayerControls.volume:

@@ -1,8 +1,12 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
+"""Minimalist skin: single content line, no embed, no controls."""
+from __future__ import annotations
+
 from os.path import basename
 
 from utils.music.converters import fix_characters, time_format
 from utils.music.models import LavalinkPlayer
+from utils.music.ui.emoji_set import e as emoji
 
 
 class Minimalist:
@@ -21,19 +25,21 @@ class Minimalist:
         player.static = False
 
     def load(self, player: LavalinkPlayer) -> dict:
+        duration = "🔴 Livestream" if player.current.is_stream else time_format(player.current.duration)
+        title = fix_characters(player.current.title, 42)
+        author = fix_characters(player.current.author, 20)
+        url = player.current.uri or player.current.search_uri
 
-        duration = "🔴 Livestream" if player.current.is_stream else \
-            time_format(player.current.duration)
-
-        data = {
-            "embeds": [],
-            "content": f"-# ▶️`⠂Playing:` [`{fix_characters(player.current.title, 42)}`](<{player.current.uri or player.current.search_uri}>) `[{fix_characters(player.current.author, 20)}] {duration}`"
-        }
+        content = (
+            f"-# {emoji('play')}`⠂Playing:` [`{title}`](<{url}>) "
+            f"`[{author}] {duration}`"
+        )
 
         if player.current_hint:
-            data["content"] += f"\n-# 💡`⠂Tip: {player.current_hint}`"
+            content += f"\n-# {emoji('tip')}`⠂Tip: {player.current_hint}`"
 
-        return data
+        return {"content": content, "embeds": []}
+
 
 def load():
     return Minimalist()

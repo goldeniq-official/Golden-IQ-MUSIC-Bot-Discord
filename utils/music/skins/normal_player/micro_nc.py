@@ -1,10 +1,15 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
+"""Micro no-controller skin: one tiny embed, no buttons."""
+from __future__ import annotations
+
 from os.path import basename
 
 import disnake
 
 from utils.music.converters import fix_characters
 from utils.music.models import LavalinkPlayer
+from utils.music.ui import theme
+from utils.music.ui.emoji_set import e as emoji
 
 
 class MicroNC:
@@ -23,23 +28,25 @@ class MicroNC:
         player.static = False
 
     def load(self, player: LavalinkPlayer) -> dict:
-
-        data = {
-            "content": None,
-            "embeds": []
-        }
+        color = theme.resolve_color(player.bot, player.guild, theme.status_for_player(player))
+        title = fix_characters(player.current.title, 30)
+        author = fix_characters(player.current.author, 12)
+        url = player.current.uri or player.current.search_uri
 
         embed = disnake.Embed(
-            color=player.bot.get_color(player.guild.me),
-            description=f"-# 🎶 **⠂[{fix_characters(player.current.title, 30)}]({player.current.uri or player.current.search_uri})** `[{fix_characters(player.current.author, 12)}]`"
+            color=color,
+            description=f"-# {emoji('queue')} **⠂[{title}]({url})** `[{author}]`",
         )
 
-        data["embeds"].append(embed)
+        data: dict = {"content": None, "embeds": [embed]}
 
         if player.current_hint:
-            data["embeds"].append(disnake.Embed(color=player.bot.get_color(player.guild.me)).set_footer(text=f"💡 Tip: {player.current_hint}"))
+            hint = disnake.Embed(color=color)
+            hint.set_footer(text=f"{emoji('tip')} Tip: {player.current_hint}")
+            data["embeds"].append(hint)
 
         return data
+
 
 def load():
     return MicroNC()
