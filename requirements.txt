@@ -41,8 +41,8 @@ curl_cffi>=0.7.0
 nodriver==0.32
 undetected-chromedriver==3.5.5
 
-# REPL helpers
-jishaku>=2.5.2
+# REPL helpers (optional; only the disnake-compatible build works — official PyPI jishaku is discord.py only).
+# Install manually if needed, e.g.: pip install "jishaku @ git+https://github.com/<your-fork>/jishaku.git"
 
 # Python 3.12+: setuptools is no longer bundled with venv
 setuptools>=70.0.0; python_version>='3.12'

@@ -752,7 +752,10 @@ class BotPool:
 
             bot.http.token = token
 
-            bot.load_extension("jishaku")
+            try:
+                bot.load_extension("jishaku")
+            except Exception as e:
+                print(f"[INFO] jishaku not loaded (optional dev REPL): {type(e).__name__}: {e}")
 
             if bot.config['INTERACTION_COMMAND_ONLY']:
 
