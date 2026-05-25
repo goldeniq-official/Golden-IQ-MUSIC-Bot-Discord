@@ -35,7 +35,7 @@ class MicroNC:
 
         embed = disnake.Embed(
             color=color,
-            description=f"-# {emoji('queue')} **⠂[{title}]({url})** `[{author}]`",
+            description=f"> ▶ **⠂[{title}]({url})** `[{author}]`",
         )
 
         data: dict = {"content": None, "embeds": [embed]}

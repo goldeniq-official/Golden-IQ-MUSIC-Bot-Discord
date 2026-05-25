@@ -57,20 +57,20 @@ class MiniPlayer:
         lines = [
             theme.status_accent_line(player),
             f"## [{fix_characters(player.current.single_title, 48)}]({player.current.uri or player.current.search_uri})",
-            f"-# **Uploader:** `{fix_characters(player.current.author, 17)}`",
+            f"> 👤 **{fix_characters(player.current.author, 17)}**",
         ]
 
         if not player.current.autoplay:
-            lines.append(f"-# **Requested by:** <@{player.current.requester}>")
+            lines.append(f"> 🎧 Requested by <@{player.current.requester}>")
         else:
             related_url = player.current.info.get("extra", {}).get("related", {}).get("uri")
             if related_url:
-                lines.append(f"-# **Added via:** [`[Recommendation]`]({related_url})")
+                lines.append(f"> ✨ [Recommendation]({related_url})")
             else:
-                lines.append("-# **Added via:** `[Recommendation]`")
+                lines.append("> ✨ Recommendation")
 
         if player.command_log:
-            lines.append(f"-# {player.command_log_emoji} ⠂**Last Interaction:** {player.command_log}")
+            lines.append(f"> {player.command_log_emoji} {player.command_log}")
 
         embed = disnake.Embed(color=color, description="\n".join(lines))
         embed.set_author(

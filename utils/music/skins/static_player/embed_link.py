@@ -33,7 +33,7 @@ class EmbedLinkStaticSkin:
         parts: list[str] = []
 
         if player.current_hint:
-            parts.append(f"> -# `{emoji('tip')} Tip: {player.current_hint}`")
+            parts.append(f"> 💡 `{player.current_hint}`")
 
         # Header
         title = (
@@ -41,50 +41,35 @@ class EmbedLinkStaticSkin:
             if player.current.uri else fix_characters(player.current.title)
         )
         if player.paused:
-            parts.append(f"> ### {emoji('pause')} ⠂Paused: {title}")
+            parts.append(f"## ⏸️ {title}")
         else:
-            parts.append(f"> ### {emoji('play')} ⠂Now Playing: {title}")
+            parts.append(f"## ▶ {title}")
 
         # Duration row
         if player.current.is_stream:
-            parts.append(f"> -# {emoji('live')} **⠂Duration:** `Livestream`")
+            parts.append(f"> 🔴 `LIVE STREAM` ⬩ playing")
         else:
-            duration_line = f"> -# {emoji('clock')} **⠂Duration:** `{time_format(player.current.duration)}`"
-            if not player.paused:
-                marker = queue_render.remaining_time_marker(player.current, position_ms=player.position)
-                duration_line += f" ⠂ ends {marker}"
+            marker = queue_render.remaining_time_marker(player.current, position_ms=player.position)
+            duration_line = f"> ⏳ `{time_format(player.position)} / {time_format(player.current.duration)}` ⬩ ends {marker}"
             parts.append(duration_line)
 
         # Attribution + extras
         if not player.current.autoplay:
-            parts.append(f"> -# {emoji('request')} **⠂Requested by:** <@{player.current.requester}>")
+            parts.append(f"> 🎧 Requested by <@{player.current.requester}>")
         else:
             related_url = player.current.info.get("extra", {}).get("related", {}).get("uri")
-            label = f"[`Recommended Song`](<{related_url}>)" if related_url else "`Recommended Song`"
-            parts.append(f"> -# {emoji('recommendation')} **⠂Added via:** {label}")
+            label = f"[`Recommendation`](<{related_url}>)" if related_url else "`Recommendation`"
+            parts.append(f"> ✨ Added via: {label}")
 
         extras: list[str] = []
-        if player.current.playlist_name:
-            extras.append(layout.compact_field(
-                emoji("playlist"), "Playlist",
-                f"[`{fix_characters(player.current.playlist_name) or 'View'}`](<{player.current.playlist_url}>)",
-            ))
-        if player.current.track_loops:
-            extras.append(layout.compact_field(emoji("loop_one"), "Loops left", f"`{player.current.track_loops}`"))
-        elif player.loop == "current":
-            extras.append(layout.compact_field(emoji("loop_one"), "Loop", "`current song`"))
-        elif player.loop == "queue":
-            extras.append(layout.compact_field(emoji("loop"), "Loop", "`queue`"))
-        try:
-            extras.append(layout.compact_field("*️⃣", "Voice channel", player.guild.me.voice.channel.mention))
-        except AttributeError:
-            pass
+        if player.current_hint:
+             pass 
 
         if extras:
-            parts.append(layout.accordion_text(extras, visible=3, hidden_label="more"))
-
+             pass 
+         
         if player.command_log:
-            parts.append(f"> -# {player.command_log_emoji} **⠂Last Interaction:** {player.command_log}")
+            parts.append(f"> {player.command_log_emoji} {player.command_log}")
 
         if qsize := len(player.queue):
             queue_text, _ = queue_render.render_queue_lines(player, max_items=5, format="compact")

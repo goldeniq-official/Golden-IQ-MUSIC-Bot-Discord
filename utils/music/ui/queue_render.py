@@ -30,28 +30,19 @@ if TYPE_CHECKING:
     from utils.music.models import LavalinkPlayer, LavalinkTrack
 
 
-_RECOMMENDATION_PREFIX = "👍⠂"
-
+_RECOMMENDATION_PREFIX = "✨"
 
 def _format_duration(track) -> str:
     if track.is_stream:
         return "🔴 LIVE"
     return time_format(track.duration)
 
-
 def render_compact_line(track, index: int, *, title_limit: int = 28, is_recommendation: bool = False) -> str:
-    """Render a single track as one compact line.
-
-    Format::
-
-        -# `01) [3:42]` [Title…](url)
-
-    With autoplay recommendation prefix when applicable.
-    """
-    prefix = _RECOMMENDATION_PREFIX if is_recommendation else ""
+    """Render a single track as one compact line."""
+    prefix = f"{_RECOMMENDATION_PREFIX} " if is_recommendation else ""
     duration = _format_duration(track)
     title = fix_characters(track.title, title_limit)
-    return f"-# `{prefix}{index:02}) [{duration}]` [`{title}`]({track.uri})"
+    return f"`{prefix}{index:02} ⬩` [`{title}`]({track.uri}) `{duration}`"
 
 
 def render_compact_lines(
@@ -75,13 +66,13 @@ def render_compact_lines(
 
 def render_detailed_line(track, index: int, *, title_limit: int = 42, is_recommendation: bool = False) -> str:
     """Two-line entry with author on the second line."""
-    prefix = _RECOMMENDATION_PREFIX if is_recommendation else ""
+    prefix = f"{_RECOMMENDATION_PREFIX} " if is_recommendation else ""
     duration = _format_duration(track)
     title = fix_characters(track.title, title_limit)
     author = fix_characters(track.author, title_limit)
     return (
-        f"-# `{prefix}{index:02}) [{duration}]` [`{title}`]({track.uri})\n"
-        f"-# ⠂⠂└── 👤 `{author}`"
+        f"`{prefix}{index:02} ⬩` [`{title}`]({track.uri})\n"
+        f"> 👤 `{author}` ⬩ ⏳ `{duration}`"
     )
 
 
@@ -166,7 +157,7 @@ def render_queue_footer_eta(player: "LavalinkPlayer") -> str:
         return ""
 
     ends_at = disnake.utils.utcnow() + datetime.timedelta(milliseconds=eta_ms)
-    return f"-# `[⌛ Songs end` <t:{int(ends_at.timestamp())}:R> `⌛]`"
+    return f"> ⏳ **Songs end:** <t:{int(ends_at.timestamp())}:R>"
 
 
 def remaining_time_marker(track, *, position_ms: int = 0) -> str:

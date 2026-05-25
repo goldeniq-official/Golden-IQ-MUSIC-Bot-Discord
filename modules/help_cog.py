@@ -171,20 +171,19 @@ class HelpCog(commands.Cog, name="Help"):
         else:
             usage_cmd = ""
 
-        embed = disnake.Embed(color=self.bot.get_color(ctx.guild.me))
+        embed = disnake.Embed(color=0xDEB887)
 
-        txt = f"### ⌨️ ⠂Comando: {ctx.prefix}{cmd}\n```\n{help_cmd}```\n"
+        txt = f"## ⌨️ Command: `{ctx.prefix}{cmd}`\n> {help_cmd}\n\n"
         if cmd.aliases:
-            aliases = " | ".join([f"{ctx.prefix}{ali}" for ali in cmd.aliases])
-            txt += f"🔄 **⠂Alternatives:** ```\n{aliases}```\n"
+            aliases = " ⬩ ".join([f"`{ctx.prefix}{ali}`" for ali in cmd.aliases])
+            txt += f"> 🔄 **Aliases:** {aliases}\n"
         if hasattr(cmd, 'commands'):
-            subs = " | ".join([c.name for c in cmd.commands if (await check_perms(ctx, c))])
-            txt += f"🔢 **⠂Subcommands:** ```{subs}``` Use the command: `[ {ctx.prefix}help {cmd} subcommand ]` to see more details about the subcommand.\n\n"
+            subs = " ⬩ ".join([f"`{c.name}`" for c in cmd.commands if (await check_perms(ctx, c))])
+            txt += f"> 🔢 **Subcommands:** {subs}\n> -# Use `{ctx.prefix}help {cmd} <subcommand>` to view details.\n"
 
         if usage_cmd:
-            txt += f"📘 **⠂How to Use:** ```\n{usage_cmd}```\n" \
-                   f"⚠️ **⠂Notes about argument usage in the command:** ```\n" \
-                   f"[] = Required | <> = Optional```\n"
+            txt += f"\n### 📘 How to Use\n```\n{usage_cmd}```\n" \
+                   f"> -# `[]` = Required  ⬩  `<>` = Optional\n"
 
         flags = cmd.extras.get("flags")
 
@@ -215,9 +214,9 @@ class HelpCog(commands.Cog, name="Help"):
                 t.append(s)
 
             if t:
-                txt += ("🚩 **⠂Flags `(options to add at the end of the command)`:**```ini\n" + "\n\n".join(t) + "```")
+                txt += ("\n### 🚩 Flags\n> *Options to add at the end of the command*\n```ini\n" + "\n".join(t) + "\n```")
 
-        embed.set_author(name="Help menu - Command list (prefix)", icon_url=self.bot.user.display_avatar.url)
+        embed.set_author(name="Command Details", icon_url=self.bot.user.display_avatar.url)
 
         embed.description = txt
 
@@ -283,19 +282,18 @@ class HelpCog(commands.Cog, name="Help"):
         for category, data in sorted(cmd_lst_new.items()):
             btn_id.append([category, data["emoji"]])
 
-            cmds = ', '.join([c.name for c in sorted(data['cmds'], key=lambda c: c.name)])
+            cmds = ' ⬩ '.join([f"`{c.name}`" for c in sorted(data['cmds'], key=lambda c: c.name)])
             n = len(data['cmds'])
-            lst.append(f"\n\n**{data['emoji']} ⠂{category} ({n} command{'s' if n > 1 else ''}):**\n`{cmds}`")
+            lst.append(f"### {data['emoji']} {category} ({n})\n> {cmds}\n")
 
         txt = f"{''.join(lst)}\n\n" \
-              "To get information about a command directly, use: \n" \
-              f"`{ctx.prefix}{ctx.invoked_with} <command/alias>`"
+              f"> 💡 **Tip:** Use `{ctx.prefix}{ctx.invoked_with} <command>` for details."
 
         embed = disnake.Embed(
             description=txt.replace(ctx.me.mention, f"@{ctx.me.display_name}").replace(f"<@!{ctx.bot.user.id}>",
                                                                                        f"@{ctx.me.display_name}"),
-            color=self.bot.get_color(ctx.guild.me))
-        embed.set_author(name=f"Help menu - Command list (prefix)",
+            color=0xDEB887)
+        embed.set_author(name="Golden IQ Help Menu",
                          icon_url=self.bot.user.display_avatar.replace(static_format="png").url)
 
         try:

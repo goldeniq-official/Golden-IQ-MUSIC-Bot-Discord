@@ -38,24 +38,25 @@ class ClassicStaticSkin:
         # Header block
         title = f"## [{player.current.title}]({player.current.uri or player.current.search_uri})"
         if player.current.is_stream:
-            duration_line = f"{emoji('live')} **⠂Livestream**"
+            duration_line = f"> 🔴 `LIVE STREAM` ⬩ playing"
         else:
-            duration_line = f"{emoji('clock')} **⠂Duration:** `{time_format(player.current.duration)}`"
+            marker = queue_render.remaining_time_marker(player.current, position_ms=player.position)
+            duration_line = f"> ⏳ `{time_format(player.position)} / {time_format(player.current.duration)}` ⬩ ends {marker}"
 
-        rows: list[tuple[str, str]] = [(emoji("person"), f"**⠂Uploader:** `{player.current.author}`")]
+        rows: list[str] = [f"> 👤 **{player.current.author}**"]
         if not player.current.autoplay:
-            rows.append(("🎧", f"**⠂Requested by:** <@{player.current.requester}>"))
+            rows.append(f"> 🎧 Requested by <@{player.current.requester}>")
         else:
             related_url = player.current.info.get("extra", {}).get("related", {}).get("uri")
-            label = f"[`Recommendation`]({related_url})" if related_url else "`Recommendation`"
-            rows.append((emoji("recommendation"), f"**⠂Added via:** {label}"))
+            label = f"[Recommendation]({related_url})" if related_url else "Recommendation"
+            rows.append(f"> ✨ {label}")
 
         if player.current.playlist_name:
-            rows.append((emoji("playlist"), f"**⠂Playlist:** [`{layout.truncate(player.current.playlist_name, 20)}`]({player.current.playlist_url})"))
+            rows.append(f"> 📀 [{layout.truncate(player.current.playlist_name, 20)}]({player.current.playlist_url})")
 
-        sections = [title, "", duration_line, layout.vertical_stack(rows)]
+        sections = [title, duration_line] + rows
         if player.command_log:
-            sections.append(f"{player.command_log_emoji} **⠂Last Interaction:** {player.command_log}")
+            sections.append(f"> {player.command_log_emoji} {player.command_log}")
 
         embed = disnake.Embed(color=color, description="\n".join(sections))
         embed.set_author(

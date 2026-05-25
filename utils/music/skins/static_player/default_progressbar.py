@@ -52,57 +52,55 @@ class DefaultProgressbarStaticSkin:
 
         embed = disnake.Embed(color=color)
         embed.set_author(
-            name=f"{status_label}   •   {source_label}",
+            name=f"{source_label} ⬩ {status_label}",
             icon_url=music_source_image(source),
         )
         embed.title = fix_characters(player.current.single_title, 90)
         embed.url = player.current.uri or player.current.search_uri
 
-        lines: list[str] = [f"# {player.current.author}"]
-
-        if player.current.album_name:
-            album_text = fix_characters(player.current.album_name, 60)
-            if player.current.album_url:
-                lines.append(f"-# from [{album_text}]({player.current.album_url})")
-            else:
-                lines.append(f"-# from {album_text}")
-
-        lines.append("")
+        # ── Body: Blockquote styling with Progress Bar ────────────────────
+        lines: list[str] = [f"> 👤 **{player.current.author}**"]
 
         if player.current.is_stream:
-            lines.append(f"{emoji('live')}   `{progress.FILLED_CHAR * 22}`   `LIVE`")
+            lines.append(f"> 🔴 `{progress.FILLED_CHAR * 15}`   `LIVE STREAM` ⬩ playing")
         else:
-            bar = progress.render_unicode_bar(player.position, player.current.duration, width=22)
+            bar = progress.render_unicode_bar(player.position, player.current.duration, width=15)
+            state_emoji = "⏸️" if player.paused else "⏳"
             lines.append(
-                f"`{bar}`   `{time_format(player.position)} / {time_format(player.current.duration)}`"
+                f"> {state_emoji} `{bar}` `{time_format(player.position)} / {time_format(player.current.duration)}`"
             )
 
-        meta_parts: list[str] = []
         if not player.current.autoplay:
-            meta_parts.append(f"{emoji('request')} <@{player.current.requester}>")
+            lines.append(f"> 🎧 Requested by <@{player.current.requester}>")
         else:
             related_url = player.current.info.get("extra", {}).get("related", {}).get("uri")
-            meta_parts.append(f"{emoji('recommendation')} [Recommended]({related_url})" if related_url else f"{emoji('recommendation')} Recommended")
+            lines.append(
+                f"> ✨ [Recommended Track]({related_url})" if related_url else f"> ✨ Recommended Track"
+            )
+
+        # Optional Album/Playlist info in blockquote
+        extra_parts: list[str] = []
+        if player.current.album_name:
+            album_text = fix_characters(player.current.album_name, 40)
+            if player.current.album_url:
+                extra_parts.append(f"💿 [{album_text}]({player.current.album_url})")
+            else:
+                extra_parts.append(f"💿 {album_text}")
+
         try:
-            meta_parts.append(f"🔊 {player.guild.me.voice.channel.mention}")
+            extra_parts.append(f"📢 {player.guild.me.voice.channel.mention}")
         except AttributeError:
             pass
-        if player.loop:
-            meta_parts.append("🔂 Loop song" if player.loop == "current" else "🔁 Loop queue")
-        if player.current.track_loops:
-            meta_parts.append(f"🔂 {player.current.track_loops} loop(s) left")
-        if player.keep_connected:
-            meta_parts.append("♾ 24/7")
+
         if player.current.playlist_name:
             pl_text = fix_characters(player.current.playlist_name, 26)
             if player.current.playlist_url:
-                meta_parts.append(f"{emoji('playlist')} [{pl_text}]({player.current.playlist_url})")
+                extra_parts.append(f"📀 [{pl_text}]({player.current.playlist_url})")
             else:
-                meta_parts.append(f"{emoji('playlist')} {pl_text}")
+                extra_parts.append(f"📀 {pl_text}")
 
-        if meta_parts:
-            lines.append("")
-            lines.append("   •   ".join(meta_parts))
+        if extra_parts:
+            lines.append(f"> {' ⬩ '.join(extra_parts)}")
 
         if player.command_log:
             lines.append("")

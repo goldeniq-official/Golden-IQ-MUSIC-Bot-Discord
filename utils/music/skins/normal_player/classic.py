@@ -52,58 +52,57 @@ class ClassicSkin:
         # ── Top embed: artwork-led header ───────────────────────────────
         embed_top = disnake.Embed(color=color)
         embed_top.set_author(
-            name=f"{status_label}   ·   {source_label}",
+            name=f"{source_label} ⬩ {status_label}",
             icon_url=music_source_image(source),
         )
         embed_top.title = fix_characters(player.current.title, 90)
         embed_top.url = player.current.uri or player.current.search_uri
-        embed_top.description = f"## {player.current.author}"
+        embed_top.description = f"👤 **{player.current.author}**"
         embed_top.set_thumbnail(url=player.current.thumb)
         embed_top.set_image(url=theme.PREMIUM_DECORATIVE_BAR)
 
-        # ── Bottom embed: prose details + optional mini-queue ───────────
+        # ── Bottom embed: Blockquote styling + optional mini-queue ──────
         body_lines: list[str] = []
 
         if player.current.is_stream:
-            body_lines.append(f"{emoji('live')}  `Live broadcast`")
+            body_lines.append(f"> 🔴 `LIVE STREAM` ⬩ playing")
         elif player.paused:
-            body_lines.append(f"{emoji('pause')}  `{time_format(player.current.duration)}`")
+            body_lines.append(f"> ⏸️ `{time_format(player.position)} / {time_format(player.current.duration)}` ⬩ paused")
         else:
             marker = queue_render.remaining_time_marker(player.current, position_ms=player.position)
             body_lines.append(
-                f"{emoji('clock')}  `{time_format(player.current.duration)}`   ends {marker}"
+                f"> ⏳ `{time_format(player.position)} / {time_format(player.current.duration)}` ⬩ ends {marker}"
             )
 
         meta_parts: list[str] = []
         if not player.current.autoplay:
-            meta_parts.append(f"Requested by <@{player.current.requester}>")
+            meta_parts.append(f"🎧 Requested by <@{player.current.requester}>")
         else:
             related_url = player.current.info.get("extra", {}).get("related", {}).get("uri")
-            meta_parts.append(f"[Recommended track]({related_url})" if related_url else "Recommended track")
+            meta_parts.append(f"✨ [Recommended track]({related_url})" if related_url else "✨ Recommended track")
         if (qsize := len(player.queue)) and not player.mini_queue_enabled:
-            meta_parts.append(f"{qsize} in queue")
+            meta_parts.append(f"📑 {qsize} in queue")
         if player.current.playlist_name:
             pl_text = fix_characters(player.current.playlist_name, 28)
             if player.current.playlist_url:
-                meta_parts.append(f"from playlist [{pl_text}]({player.current.playlist_url})")
+                meta_parts.append(f"📀 [{pl_text}]({player.current.playlist_url})")
             else:
-                meta_parts.append(f"from playlist {pl_text}")
+                meta_parts.append(f"📀 {pl_text}")
         if player.loop:
-            meta_parts.append("Loop on" if player.loop != "current" else "Loop song")
+            meta_parts.append("🔁 Loop")
 
         if meta_parts:
-            body_lines.append("")
-            body_lines.append("   ·   ".join(meta_parts))
+            body_lines.append(f"> {' ⬩ '.join(meta_parts)}")
 
         if player.command_log:
             body_lines.append("")
-            body_lines.append(f"{player.command_log_emoji}  *{player.command_log}*")
+            body_lines.append(f"> {player.command_log_emoji}  *{player.command_log}*")
 
         if player.mini_queue_enabled:
             queue_text, is_rec = queue_render.render_queue_lines(player, max_items=5, format="compact")
             if queue_text:
                 body_lines.append("")
-                body_lines.append("**Up next  ·  Recommended:**" if is_rec else "**Up next:**")
+                body_lines.append("## Up next ✨" if is_rec else "## Up next 📑")
                 body_lines.append(queue_text)
 
         embed = disnake.Embed(color=color, description="\n".join(body_lines))

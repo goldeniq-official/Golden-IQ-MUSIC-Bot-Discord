@@ -86,7 +86,7 @@ class DefaultSkin:
         # ── Header (small text above title) ─────────────────────────────
         embed = disnake.Embed(color=color)
         embed.set_author(
-            name=f"{_status_header(status)}   •   {_source_label(source)}",
+            name=f"{_source_label(source)} ⬩ {_status_header(status)}",
             icon_url=music_source_image(source),
         )
 
@@ -94,59 +94,57 @@ class DefaultSkin:
         embed.title = fix_characters(player.current.single_title, 90)
         embed.url = player.current.uri or player.current.search_uri
 
-        # ── Body: heading-led, prose meta ───────────────────────────────
+        # ── Body: Blockquote styling for next-gen UI ────────────────────
         lines: list[str] = []
 
-        # Artist as biggest in-description heading
-        lines.append(f"# {player.current.author}")
+        # Artist
+        lines.append(f"> 👤 **{player.current.author}**")
 
-        if player.current.album_name:
-            album_text = fix_characters(player.current.album_name, 60)
-            if player.current.album_url:
-                lines.append(f"-# from [{album_text}]({player.current.album_url})")
-            else:
-                lines.append(f"-# from {album_text}")
-
-        lines.append("")  # breathing room
-
-        # One clean time line
+        # Duration & Status
         if player.current.is_stream:
-            lines.append(f"{emoji('live')}   **Live broadcast**")
+            lines.append(f"> 🔴 `LIVE STREAM` ⬩ playing")
         elif player.paused:
-            lines.append(f"{emoji('pause')}   `{time_format(player.current.duration)}`")
+            lines.append(f"> ⏸️ `{time_format(player.position)} / {time_format(player.current.duration)}` ⬩ paused")
         else:
             marker = queue_render.remaining_time_marker(
                 player.current, position_ms=player.position
             )
             lines.append(
-                f"{emoji('clock')}   `{time_format(player.current.duration)}`   •   ends {marker}"
+                f"> ⏳ `{time_format(player.position)} / {time_format(player.current.duration)}` ⬩ ends {marker}"
             )
 
-        # Single meta line, prose-style
-        meta_parts: list[str] = []
+        # Meta & Requester
         if not player.current.autoplay:
-            meta_parts.append(f"{emoji('request')} <@{player.current.requester}>")
+            lines.append(f"> 🎧 Requested by <@{player.current.requester}>")
         else:
             related_url = player.current.info.get("extra", {}).get("related", {}).get("uri")
-            meta_parts.append(
-                f"{emoji('recommendation')} [Recommended]({related_url})"
-                if related_url else f"{emoji('recommendation')} Recommended"
+            lines.append(
+                f"> ✨ [Recommended Track]({related_url})"
+                if related_url else f"> ✨ Recommended Track"
             )
+
+        # Optional Album/Playlist info in blockquote
+        extra_parts: list[str] = []
+        if player.current.album_name:
+            album_text = fix_characters(player.current.album_name, 40)
+            if player.current.album_url:
+                extra_parts.append(f"💿 [{album_text}]({player.current.album_url})")
+            else:
+                extra_parts.append(f"💿 {album_text}")
 
         qsize = len(player.queue)
         if qsize and not player.mini_queue_enabled:
-            meta_parts.append(f"{emoji('queue')} {qsize} in queue")
+            extra_parts.append(f"📑 {qsize} in queue")
 
         if player.current.playlist_name:
             pl_text = fix_characters(player.current.playlist_name, 26)
             if player.current.playlist_url:
-                meta_parts.append(f"{emoji('playlist')} [{pl_text}]({player.current.playlist_url})")
+                extra_parts.append(f"📀 [{pl_text}]({player.current.playlist_url})")
             else:
-                meta_parts.append(f"{emoji('playlist')} {pl_text}")
+                extra_parts.append(f"📀 {pl_text}")
 
-        if meta_parts:
-            lines.append("")
-            lines.append("   •   ".join(meta_parts))
+        if extra_parts:
+            lines.append(f"> {' ⬩ '.join(extra_parts)}")
 
         if player.command_log:
             lines.append("")

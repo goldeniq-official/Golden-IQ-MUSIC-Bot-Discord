@@ -35,18 +35,18 @@ class MicroController:
         color = theme.resolve_color(player.bot, player.guild, status)
 
         body = (
-            f"-# [`{fix_characters(player.current.single_title, 32)}`]({player.current.uri or player.current.search_uri}) "
-            f"[`{fix_characters(player.current.author, 12)}`] "
+            f"> 👤 **{fix_characters(player.current.author, 12)}**\n"
+            f"> ▶ [`{fix_characters(player.current.single_title, 32)}`]({player.current.uri or player.current.search_uri}) \n"
         )
 
         if not player.current.autoplay:
-            body += f"<@{player.current.requester}>"
+            body += f"> 🎧 <@{player.current.requester}>"
         else:
             related_url = player.current.info.get("extra", {}).get("related", {}).get("uri")
-            body += f"[`[Recommended]`]({related_url})" if related_url else "`[Recommended]`"
+            body += f"> ✨ [`[Recommended]`]({related_url})" if related_url else "> ✨ `[Recommended]`"
 
         if player.command_log:
-            body += f"\n\n{player.command_log_emoji} ⠂**Last Interaction:** {player.command_log}"
+            body += f"\n> {player.command_log_emoji} {player.command_log}"
 
         embed = disnake.Embed(color=color, description=body)
         embed.set_author(

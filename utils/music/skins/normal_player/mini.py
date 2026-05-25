@@ -62,22 +62,21 @@ class MiniSkin:
         if queue_size:
             badges.append(f"`({queue_size})`")
 
-        duration = "🔴 Livestream" if player.current.is_stream else time_format(player.current.duration)
+        duration = "`LIVE STREAM` ⬩ streaming" if player.current.is_stream else f"`{time_format(player.position)} / {time_format(player.current.duration)}`"
 
-        rows = [
-            (emoji("clock"), f"`{duration}`"),
-            (emoji("person"), f"`{fix_characters(player.current.author, 28)}`"),
+        info_block = [
+            f"> 👤 **{fix_characters(player.current.author, 28)}**",
+            f"> ⏳ {duration}",
         ]
-        info_block = layout.vertical_stack(rows)
 
         sections = [
             theme.status_accent_line(player),
             title_line + " " + " ".join(badges) if badges else title_line,
-            info_block,
+            "\n".join(info_block),
         ]
 
         if player.command_log:
-            sections.append(f"> -# {player.command_log_emoji} **Last action ⠂** {player.command_log}")
+            sections.append(f"> {player.command_log_emoji} **{player.command_log}**")
 
         embed = disnake.Embed(color=color, description="\n".join(sections))
         embed.set_author(

@@ -33,28 +33,26 @@ class LiteSkin:
         status = theme.status_for_player(player)
         color = theme.resolve_color(player.bot, player.guild, status)
 
-        duration = "🔴 Livestream" if player.current.is_stream else time_format(player.current.duration)
+        duration = "🔴 `LIVE STREAM`" if player.current.is_stream else f"`{time_format(player.position)} / {time_format(player.current.duration)}`"
 
         lines = [
-            f"> -# {emoji('play')} **┃**[`{fix_characters(player.current.title, 45)}`]({player.current.uri or player.current.search_uri})",
-            f"> -# ℹ️ **┃**`{duration}`┃`{fix_characters(player.current.author, 18)}`",
+            f"> ▶ **│**[`{fix_characters(player.current.title, 45)}`]({player.current.uri or player.current.search_uri})",
+            f"> 👤 **│**`{fix_characters(player.current.author, 18)}`",
+            f"> ⏳ **│**{duration}",
         ]
 
-        # Original had a bug: when autoplay was true, the requester line
-        # OVERWROTE the description. New behavior: append a recommendation
-        # row to the same description.
         if not player.current.autoplay:
-            lines[-1] += f"┃<@{player.current.requester}>"
+            lines.append(f"> 🎧 **│**<@{player.current.requester}>")
         else:
             related_url = player.current.info.get("extra", {}).get("related", {}).get("uri")
             if related_url:
-                lines.append(f"> -# {emoji('recommendation')} **┃**[`[Recommended]`]({related_url})")
+                lines.append(f"> ✨ **│**[`[Recommended]`]({related_url})")
             else:
-                lines.append(f"> -# {emoji('recommendation')} **┃**`[Recommended]`")
+                lines.append(f"> ✨ **│**`[Recommended]`")
 
         if player.current.playlist_name:
             lines.append(
-                f"> -# {emoji('playlist')} **┃ Playlist:** [`{player.current.playlist_name}`]({player.current.playlist_url})"
+                f"> 📀 **│**[`{player.current.playlist_name}`]({player.current.playlist_url})"
             )
 
         embed = disnake.Embed(color=color, description="\n".join(lines))

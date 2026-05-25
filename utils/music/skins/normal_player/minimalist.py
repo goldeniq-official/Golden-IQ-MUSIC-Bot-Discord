@@ -25,18 +25,18 @@ class Minimalist:
         player.static = False
 
     def load(self, player: LavalinkPlayer) -> dict:
-        duration = "🔴 Livestream" if player.current.is_stream else time_format(player.current.duration)
+        duration = "🔴 `LIVE STREAM`" if player.current.is_stream else time_format(player.current.duration)
         title = fix_characters(player.current.title, 42)
         author = fix_characters(player.current.author, 20)
         url = player.current.uri or player.current.search_uri
 
         content = (
-            f"-# {emoji('play')}`⠂Playing:` [`{title}`](<{url}>) "
+            f"> ▶ `Playing:` [`{title}`](<{url}>) "
             f"`[{author}] {duration}`"
         )
 
         if player.current_hint:
-            content += f"\n-# {emoji('tip')}`⠂Tip: {player.current_hint}`"
+            content += f"\n> 💡 `{player.current_hint}`"
 
         return {"content": content, "embeds": []}
 

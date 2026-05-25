@@ -24,53 +24,41 @@ if TYPE_CHECKING:
 # inflating the line height the way blank lines do.
 ZW = "​"
 
-# Visual separators kept short by design — desktop renders these as a thin
-# horizontal accent; mobile shrinks them gracefully because they're text.
-DIVIDER_THIN = "─" * 10
-DIVIDER_DOT = " · "
+# Modern minimal dividers. 
+DIVIDER_THIN = "⏤" * 8
+DIVIDER_DOT = " ⬩ "
 
-# Premium skins use a thin accent strip beneath the title to break the
-# embed into a clear "header / body" rhythm without resorting to fields.
-# Uses heavy box-drawing characters from Unicode block U+2500 which are
-# present in every default Discord font (the older ▰▱ variant rendered as
-# empty squares on some Windows installs).
-PREMIUM_ACCENT_BAR = "━" * 28
+# A sleeker accent bar for Next-Gen aesthetic
+PREMIUM_ACCENT_BAR = "━" * 20
 
-# Shared image used as the bottom decorative strip on premium skins. The
-# original codebase used it as `set_image` on every player view; we keep
-# it for the premium skins (default / default_progressbar / classic /
-# their static_player twins) so the visual identity stays intact.
+# Golden IQ specific modern animated bar, or sleek gradient
 PREMIUM_DECORATIVE_BAR = (
     "https://cdn.discordapp.com/attachments/554468640942981147/"
     "1127294696025227367/rainbow_bar3.gif"
 )
 
-# Status accent colors (used for embed.color when a player state should be
-# visually obvious). These deliberately override the guild role color when a
-# strong signal matters (errors, disconnect), and are skipped for the normal
-# playing state so the guild's brand color leads.
+# Status accent colors tailored for modern dark/light contrast
 STATUS_COLORS = {
     "playing": None,                 # use the guild/bot color (brand wins)
     "paused": 0xF5A623,              # amber
-    "stopped": 0x4F545C,             # neutral grey
+    "stopped": 0x4F545C,             # deep neutral grey
     "error": 0xED4245,               # discord red
     "disconnect": 0xED4245,          # discord red
     "loading": 0x5865F2,             # discord blurple
 }
 
-# Status icons used at the top of player descriptions. Unicode-only so they
-# render on every device.
+# Status icons using refined sleek symbols where possible
 STATUS_ICONS = {
-    "playing": "▶️",
-    "paused": "⏸️",
-    "stopped": "⏹️",
+    "playing": "▶",
+    "paused": "⏸",
+    "stopped": "⏹",
     "loading": "⏳",
     "live": "🔴",
     "loop_track": "🔂",
     "loop_queue": "🔁",
-    "autoplay": "🔄",
-    "recommendation": "👍",
-    "favorite": "💗",
+    "autoplay": "✨",
+    "recommendation": "💫",
+    "favorite": "💖",
     "voice": "🔊",
     "info": "💡",
     "warn": "⚠️",

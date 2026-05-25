@@ -54,21 +54,21 @@ class MiniStaticSkin:
             related_url = player.current.info.get("extra", {}).get("related", {}).get("uri")
             badges.append(layout.link("`[Recommended]`", related_url) if related_url else "`[Recommended]`")
 
-        duration = "🔴 Livestream" if player.current.is_stream else time_format(player.current.duration)
+        duration = "`LIVE STREAM` ⬩ streaming" if player.current.is_stream else f"`{time_format(player.position)} / {time_format(player.current.duration)}`"
 
-        rows = [
-            (emoji("clock"), f"**⠂Duration:** `{duration}`"),
-            (emoji("person"), f"**⠂Uploader:** `{fix_characters(player.current.author, 28)}`"),
+        info_block = [
+            f"> 👤 **{fix_characters(player.current.author, 28)}**",
+            f"> ⏳ {duration}",
         ]
 
         sections = [
             theme.status_accent_line(player),
             f"{title_line} {' '.join(badges)}",
-            layout.vertical_stack(rows),
+            "\n".join(info_block),
         ]
 
         if player.command_log:
-            sections.append(f"> -# {player.command_log_emoji} **Last action ⠂** {player.command_log}")
+            sections.append(f"> {player.command_log_emoji} **{player.command_log}**")
 
         embed = disnake.Embed(color=color, description="\n".join(sections))
         embed.set_author(
