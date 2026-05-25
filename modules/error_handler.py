@@ -27,7 +27,7 @@ class ErrorHandler(commands.Cog):
         if not self.bot.config["AUTO_ERROR_REPORT_WEBHOOK"] and self.bot.config["ERROR_REPORT_WEBHOOK"]:
             self.components.append(
                 disnake.ui.Button(
-                    label="Report this error",
+                    label="រាយការណ៍ / Report this error",
                     custom_id="report_error",
                     emoji="⚠️"
                 )
@@ -36,7 +36,7 @@ class ErrorHandler(commands.Cog):
         if self.bot.config["SUPPORT_SERVER"]:
             self.components.append(
                 disnake.ui.Button(
-                    label="Support server",
+                    label="ជំនួយ / Support server",
                     url=self.bot.config["SUPPORT_SERVER"],
                     emoji="💻"
                 )
@@ -113,13 +113,20 @@ class ErrorHandler(commands.Cog):
 
             kwargs["embed"] = disnake.Embed(
                 color=color,
-                title = "An error occurred in the command:",
-                description=f"```py\n{mask_sensitive(repr(error)[:2030], extra_secrets=[self.bot.http.token])}```"
+                title="⚠️ មានបញ្ហាបច្ចេកទេស / Something went wrong",
+                description=(
+                    "មានកំហុសមួយកើតឡើងពេលដំណើរការពាក្យបញ្ជានេះ។\n"
+                    "An unexpected error occurred while running this command.\n\n"
+                    f"-# `{type(error).__name__}`"
+                ),
             )
 
             if self.bot.config["AUTO_ERROR_REPORT_WEBHOOK"]:
                 send_webhook = True
-                kwargs["embed"].description += " `My developer will be notified about the issue.`"
+                kwargs["embed"].description += (
+                    "\n\n> 💡 អ្នកអភិវឌ្ឍន៍នឹងទទួលបានការជូនដំណឹង / "
+                    "My developer has been notified."
+                )
 
         else:
 
@@ -251,16 +258,27 @@ class ErrorHandler(commands.Cog):
             if ctx.channel.permissions_for(ctx.guild.me).embed_links:
                 kwargs["embed"] = disnake.Embed(
                     color=disnake.Colour.red(),
-                    title="An error occurred in the command:",
-                    description=f"```py\n{mask_sensitive(repr(error)[:2030], extra_secrets=[self.bot.http.token])}```"
+                    title="⚠️ មានបញ្ហាបច្ចេកទេស / Something went wrong",
+                    description=(
+                        "មានកំហុសមួយកើតឡើងពេលដំណើរការពាក្យបញ្ជានេះ។\n"
+                        "An unexpected error occurred while running this command.\n\n"
+                        f"-# `{type(error).__name__}`"
+                    ),
                 )
                 if self.bot.config["AUTO_ERROR_REPORT_WEBHOOK"]:
                     send_webhook = True
-                    kwargs["embed"].description += " `My developer will be notified about the issue.`"
+                    kwargs["embed"].description += (
+                        "\n\n> 💡 អ្នកអភិវឌ្ឍន៍នឹងទទួលបានការជូនដំណឹង / "
+                        "My developer has been notified."
+                    )
 
             else:
-                kwargs["content"] += "\n**An error occurred in the command:**\n" \
-                                     f"```py\n{mask_sensitive(repr(error)[:2030], extra_secrets=[self.bot.http.token])}```"
+                kwargs["content"] += (
+                    "\n⚠️ **មានបញ្ហាបច្ចេកទេស / Something went wrong**\n"
+                    "មានកំហុសមួយកើតឡើងពេលដំណើរការពាក្យបញ្ជានេះ។\n"
+                    "An unexpected error occurred while running this command.\n"
+                    f"`{type(error).__name__}`"
+                )
 
         else:
 
@@ -332,22 +350,23 @@ class ErrorHandler(commands.Cog):
             return
 
         await inter.response.send_modal(
-            title="Report error",
+            title="រាយការណ៍កំហុស / Report Error",
             custom_id=f"error_report_submit_{inter.message.id}",
             components=[
                 disnake.ui.TextInput(
                     style=disnake.TextInputStyle.long,
-                    label="Details",
+                    label="ព័ត៌មានលម្អិត / Details",
                     custom_id="error_details",
                     max_length=1900,
-                    required=True
+                    required=True,
+                    placeholder="តើអ្នកធ្វើអ្វីពេលកំហុសកើតឡើង? / What were you doing when the error occurred?",
                 ),
                 disnake.ui.TextInput(
                     style=disnake.TextInputStyle.short,
-                    label="Error screenshot link (Optional)",
+                    label="តំណរូបភាព / Screenshot URL (Optional)",
                     custom_id="image_url",
                     max_length=300,
-                    required=False
+                    required=False,
                 )
             ]
         )
@@ -388,7 +407,8 @@ class ErrorHandler(commands.Cog):
 
         await inter.response.edit_message(
             embed=disnake.Embed(
-                description="**Error reported successfully!**",
+                description="✅ **រាយការណ៍ដោយជោគជ័យ! / Error reported successfully!**\n"
+                            "សូមអរគុណចំពោះការរាយការណ៍។ / Thanks for the report.",
                 color=self.bot.get_color(inter.guild.me)
             ), view=None
         )

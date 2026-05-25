@@ -21,6 +21,7 @@ from utils.music.errors import GenericError, NoVoice
 from utils.music.interactions import SkinEditorMenu, EmbedPaginatorInteraction, ButtonInteraction
 from utils.music.models import LavalinkPlayer
 from utils.others import send_idle_embed, CustomContext, select_bot_pool, pool_command, CommandArgparse, update_inter
+from utils.music.ui.emoji_set import e
 
 if TYPE_CHECKING:
     from utils.client import BotCore
@@ -312,7 +313,7 @@ class MusicSettings(commands.Cog):
         await self.player_settings.callback(self=self, interaction=ctx)
 
     @commands.slash_command(
-        description=f"{desc_prefix}Change some default player settings.",
+        description=f"{desc_prefix}ផ្លាស់ប្ដូរការកំណត់ default របស់ player / Change default player settings.",
         default_member_permissions=disnake.Permissions(manage_guild=True)
     )
     @commands.contexts(guild=True)
@@ -371,7 +372,7 @@ class MusicSettings(commands.Cog):
                                   purge_messages=args.reset)
 
     @commands.slash_command(
-        description=f"{desc_prefix}Create/choose a dedicated channel for music requests and keep the player pinned.",
+        description=f"{desc_prefix}បង្កើត/ជ្រើសឆានែលស្នើភ្លេង / Set a dedicated music-request channel.",
         default_member_permissions=disnake.Permissions(manage_guild=True), cooldown=setup_cd, max_concurrency=setup_mc
     )
     @commands.contexts(guild=True)
@@ -555,7 +556,7 @@ class MusicSettings(commands.Cog):
 
             if "COMMUNITY" in guild.features:
                 buttons.insert(2, disnake.ui.Button(label="Create stage channel", custom_id=f"stage_channel_{id_}",
-                                  emoji="<:stagechannel:1077351815533826209>", disabled=not guild.me.guild_permissions.manage_channels))
+                                  emoji=e("voice_status"), disabled=not guild.me.guild_permissions.manage_channels))
 
             color = self.bot.get_color(guild.me)
 
@@ -928,7 +929,7 @@ class MusicSettings(commands.Cog):
         await self.reset.callback(self=self, interaction=ctx, delete_channel=delete_channel)
 
     @commands.slash_command(
-        description=f"{desc_prefix}Reset the settings related to the music request channel (song request).",
+        description=f"{desc_prefix}កំណត់ឆានែលស្នើភ្លេងឡើងវិញ / Reset the music request channel settings.",
         default_member_permissions=disnake.Permissions(manage_guild=True), cooldown=setup_cd, max_concurrency=setup_mc
     )
     @commands.contexts(guild=True)
@@ -1059,7 +1060,7 @@ class MusicSettings(commands.Cog):
         await self.add_dj_role.callback(self=self, interaction=ctx, role=role)
 
     @commands.slash_command(
-        description=f"{desc_prefix}Add a role to the server's DJ list.",
+        description=f"{desc_prefix}បន្ថែម role ទៅបញ្ជី DJ របស់ server / Add a role to the server's DJ list.",
         default_member_permissions=disnake.Permissions(manage_guild=True), cooldown=djrole_cd, max_concurrency=djrole_mc
     )
     @commands.contexts(guild=True)
@@ -1097,7 +1098,7 @@ class MusicSettings(commands.Cog):
         await self.remove_dj_role.callback(self=self, interaction=ctx, role=role)
 
     @commands.slash_command(
-        description=f"{desc_prefix}Remove a role from the server's DJ list.",
+        description=f"{desc_prefix}យក role ចេញពី DJ list / Remove a role from the server's DJ list.",
         default_member_permissions=disnake.Permissions(manage_guild=True), cooldown=djrole_cd, max_concurrency=djrole_mc
     )
     @commands.contexts(guild=True)
@@ -1144,7 +1145,7 @@ class MusicSettings(commands.Cog):
         await self.change_skin.callback(self=self, interaction=ctx)
 
     @commands.slash_command(
-        description=f"{desc_prefix}Change the player skin/appearance.", cooldown=skin_cd, max_concurrency=skin_mc,
+        description=f"{desc_prefix}ផ្លាស់ប្ដូររូបរាង (skin) របស់ player / Change the player skin/appearance.", cooldown=skin_cd, max_concurrency=skin_mc,
         default_member_permissions=disnake.Permissions(manage_guild=True)
     )
     @commands.contexts(guild=True)
@@ -1532,7 +1533,7 @@ class MusicSettings(commands.Cog):
 
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.slash_command(
-        description=f"{desc_prefix}View information about music servers (lavalink servers)."
+        description=f"{desc_prefix}មើលព័ត៌មាន music servers / View info about lavalink music servers."
     )
     @commands.contexts(guild=True)
     async def nodeinfo(self, interaction: disnake.ApplicationCommandInteraction):
@@ -1652,7 +1653,7 @@ class MusicSettings(commands.Cog):
         await self.custom_skin.callback(self=self, inter=ctx)
 
     @commands.slash_command(cooldown=customskin_cd, max_concurrency=customskin__mc,
-                            description=f"{desc_prefix}Create your own skins/templates for the music player.",
+                            description=f"{desc_prefix}បង្កើត skin ផ្ទាល់ខ្លួនរបស់ player / Create your own player skins.",
                             default_member_permissions=disnake.Permissions(administrator=True))
     @commands.contexts(guild=True)
     async def custom_skin(self, inter: disnake.ApplicationCommandInteraction):
@@ -1821,7 +1822,7 @@ class RPCCog(commands.Cog):
         await self.rich_presence.callback(self=self, inter=ctx)
 
     @commands.slash_command(
-        description=f"{desc_prefix}Enable/Disable the rich-presence system in your status.", cooldown=rpc_cd
+        description=f"{desc_prefix}បើក/បិទ rich-presence ក្នុង status / Toggle rich-presence in your status.", cooldown=rpc_cd
     )
     @commands.contexts(guild=True)
     async def rich_presence(self, inter: disnake.ApplicationCommandInteraction):

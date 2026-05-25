@@ -32,10 +32,13 @@ DIVIDER_DOT = " ⬩ "
 PREMIUM_ACCENT_BAR = "━" * 20
 
 # Golden IQ specific modern animated bar, or sleek gradient
-PREMIUM_DECORATIVE_BAR = (
-    "https://cdn.discordapp.com/attachments/554468640942981147/"
-    "1127294696025227367/rainbow_bar3.gif"
-)
+PREMIUM_DECORATIVE_BAR = "https://cdn.discordapp.com/attachments/554468640942981147/1082887587770937455/rainbow_bar2.gif"
+
+# "Golden IQ" brand palette — warm gold tones used by help/about/info surfaces
+# that want to express bot identity rather than guild role color.
+BRAND_GOLD = 0xD4AF37          # primary brand (Anniversary Gold)
+BRAND_GOLD_BRIGHT = 0xFFD700   # accent / highlight
+BRAND_GOLD_DEEP = 0xB8860B     # subdued (footer dividers, secondary text)
 
 # Status accent colors tailored for modern dark/light contrast
 STATUS_COLORS = {
@@ -45,6 +48,9 @@ STATUS_COLORS = {
     "error": 0xED4245,               # discord red
     "disconnect": 0xED4245,          # discord red
     "loading": 0x5865F2,             # discord blurple
+    "brand": BRAND_GOLD,             # Golden IQ brand surfaces (help/about)
+    "success": 0x57F287,             # discord green
+    "info": 0x5865F2,                # discord blurple
 }
 
 # Status icons using refined sleek symbols where possible
@@ -52,18 +58,18 @@ STATUS_ICONS = {
     "playing": "▶",
     "paused": "⏸",
     "stopped": "⏹",
-    "loading": "⏳",
+    "loading": "↻",
     "live": "🔴",
     "loop_track": "🔂",
     "loop_queue": "🔁",
-    "autoplay": "✨",
-    "recommendation": "💫",
-    "favorite": "💖",
+    "autoplay": "∞",
+    "recommendation": "✨",
+    "favorite": "🤍",
     "voice": "🔊",
-    "info": "💡",
+    "info": "ℹ️",
     "warn": "⚠️",
-    "error": "❌",
-    "ok": "✅",
+    "error": "🛑",
+    "ok": "✓",
 }
 
 

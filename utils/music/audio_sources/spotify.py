@@ -74,6 +74,25 @@ class SpotifyClient:
                 elif response.status == 401:
                     await self.get_access_token()
                     return await self.request(path=path, params=params)
+                elif response.status == 403:
+                    # Spotify Web API returns 403 when an app loses access to an
+                    # endpoint — most commonly because it's still in Development
+                    # Mode and has not been granted Extended Quota, or because
+                    # Spotify removed the endpoint from the Client Credentials
+                    # tier (e.g. /recommendations in Nov 2024).
+                    # Disable Spotify for this session so we don't spam 403s on
+                    # every subsequent query. The caller falls back to other
+                    # providers (SoundCloud, YouTube) automatically.
+                    self.disabled = True
+                    print(
+                        "⚠️ - Spotify: Internal support disabled (403 Forbidden).\n"
+                        f"   path: {path}  url: {response.url}\n"
+                        "   This usually means your Spotify app lost access to "
+                        "this endpoint (Development Mode quota, or Spotify "
+                        "deprecated it for Client Credentials flow).\n"
+                        "   Falling back to other search providers."
+                    )
+                    return
                 elif response.status == 404:
                     raise GenericError("**No results found for the provided link (check if the link is correct, if the content is private, or if it was deleted).**\n\n"
                                        f"{str(response.url).replace('api.', 'open.').replace('/v1/', '/').replace('s/', '/')}")
@@ -209,6 +228,11 @@ class SpotifyClient:
 
             r = await self.track_search(query=query)
 
+            # request() returns None when Spotify gets disabled mid-flight
+            # (e.g. 403 from the search endpoint). Let the caller fall back.
+            if r is None:
+                return
+
             tracks = []
 
             try:
@@ -278,6 +302,11 @@ class SpotifyClient:
 
             result = await self.get_track_info(url_id)
 
+            # Same fall-through: if Spotify just got disabled by a 403/429,
+            # surface None so the caller can try Lavalink Spotify source.
+            if result is None:
+                return
+
             trackinfo = {
                 'title': result["name"],
                 'author': result["artists"][0]["name"] or "Unknown Artist",
@@ -328,6 +357,8 @@ class SpotifyClient:
 
             if not (result := bot.pool.playlist_cache.get(cache_key)):
                 result = await self.get_album_info(url_id)
+                if result is None:
+                    return
                 bot.pool.playlist_cache[cache_key] = result
 
             try:
@@ -393,6 +424,8 @@ class SpotifyClient:
 
             if not (result := bot.pool.playlist_cache.get(cache_key)):
                 result = await self.get_artist_top(url_id)
+                if result is None:
+                    return
                 bot.pool.playlist_cache[cache_key] = result
 
             try:
@@ -408,6 +441,8 @@ class SpotifyClient:
 
             if not (result := bot.pool.playlist_cache.get(cache_key)):
                 result = await self.get_playlist_info(url_id)
+                if result is None:
+                    return
                 bot.pool.playlist_cache[cache_key] = result
 
             data["playlistInfo"]["name"] = result["name"]

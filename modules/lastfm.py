@@ -153,7 +153,7 @@ class LastFmCog(commands.Cog):
         await self.lastfm.callback(self=self, inter=ctx)
 
     @commands.slash_command(hidden=True, name="lastfm",
-                      description=f"{desc_prefix}Link your last.fm account to track music via scrobble.",
+                      description=f"{desc_prefix}ភ្ជាប់គណនី last.fm / Link your last.fm to scrobble tracks.",
                       extras={"allow_private": True},
                       cooldown=lastfm_cd, max_concurrency=lastfm_mc)
     @commands.contexts(guild=True)

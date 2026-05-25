@@ -111,7 +111,8 @@ class DefaultStaticSkin:
             lines.append(f"{player.command_log_emoji}   *{player.command_log}*")
 
         embed.description = "\n".join(lines)
-        embed.set_image(url=player.current.thumb)
+        embed.set_thumbnail(url=player.current.thumb)
+        embed.set_image(url=theme.PREMIUM_DECORATIVE_BAR)
 
         if player.current_hint:
             embed.set_footer(text=f"{emoji('tip')}   {player.current_hint}")

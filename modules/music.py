@@ -44,6 +44,7 @@ from utils.music.models import LavalinkPlayer, LavalinkTrack, LavalinkPlaylist, 
 from utils.others import check_cmd, send_idle_embed, CustomContext, PlayerControls, queue_track_index, \
     pool_command, string_to_file, CommandArgparse, music_source_emoji_url, song_request_buttons, \
     select_bot_pool, ProgressBar, update_inter, get_source_emoji_cfg, music_source_emoji
+from utils.music.ui.emoji_set import e
 
 sc_recommended = re.compile(r"https://soundcloud\.com/.*/recommended$")
 sc_profile_regex = re.compile(r"<?https://soundcloud\.com/[a-zA-Z0-9_-]+>?$")
@@ -120,7 +121,7 @@ class Music(commands.Cog):
         await self.set_voice_status.callback(self=self, inter=ctx, template=template)
 
     @commands.slash_command(
-        description=f"{desc_prefix}Enable/edit the automatic channel status/announcement system with the song name.",
+        description=f"{desc_prefix}បើក/កែ status ឆានែលដោយស្វ័យប្រវត្តិ / Toggle auto VC status w/ song name.",
         extras={"only_voiced": True, "exclusive_cooldown": True}, cooldown=stage_cd, max_concurrency=stage_mc,
         default_member_permissions=disnake.Permissions(manage_guild=True)
     )
@@ -226,7 +227,7 @@ class Music(commands.Cog):
     @check_voice()
     @can_send_message_check()
     @commands.slash_command(name="search", extras={"check_player": False}, cooldown=play_cd, max_concurrency=play_mc,
-                            description=f"{desc_prefix}Search for music and choose one from the results to play.")
+                            description=f"{desc_prefix}ស្វែងរកភ្លេង ហើយជ្រើសរើសពីលទ្ធផល / Search music and choose one to play.")
     @commands.contexts(guild=True)
     async def search(
             self,
@@ -299,7 +300,7 @@ class Music(commands.Cog):
     @commands.max_concurrency(1, commands.BucketType.guild)
     @commands.slash_command(
         extras={"only_voiced": True},
-        description=f"{desc_prefix}Connect me to a voice channel (or move me to one)."
+        description=f"{desc_prefix}ភ្ជាប់ខ្ញុំទៅឆានែលសំឡេង / Connect me to a voice channel (or move me)."
     )
     @commands.contexts(guild=True)
     async def connect(
@@ -524,7 +525,7 @@ class Music(commands.Cog):
     @check_voice()
     @commands.slash_command(
         name="play_music_file",
-        description=f"{desc_prefix}Play a music file in a voice channel.",
+        description=f"{desc_prefix}ចាក់ឯកសារភ្លេងក្នុងឆានែលសំឡេង / Play a music file in a voice channel.",
         extras={"check_player": False}, cooldown=play_cd, max_concurrency=play_mc
     )
     @commands.contexts(guild=True)
@@ -600,7 +601,7 @@ class Music(commands.Cog):
     @can_send_message_check()
     @check_voice()
     @commands.slash_command(
-        description=f"{desc_prefix}Play music in a voice channel.",
+        description=f"{desc_prefix}ចាក់ភ្លេងក្នុងឆានែលសំឡេង / Play music in a voice channel.",
         extras={"check_player": False}, cooldown=play_cd, max_concurrency=play_mc
     )
     @commands.contexts(guild=True)
@@ -1910,8 +1911,8 @@ class Music(commands.Cog):
                                 raise Exception(f"{r.status} | {await r.text()}")
                             else:
                                 tracks.data["playlistInfo"]["thumb"] = playlist_data["thumbnail_url"]
-                    except Exception as e:
-                        print(f"Falha ao obter artwork da playlist (oembed): {oembed_url} | {repr(e)}")
+                    except Exception as exc:
+                        print(f"Falha ao obter artwork da playlist (oembed): {oembed_url} | {repr(exc)}")
 
                 else:
 
@@ -1945,8 +1946,8 @@ class Music(commands.Cog):
                                 image_file = disnake.File(fp=BytesIO(await response.read()), filename=f'{playlist_data["id"]}.jpg')
 
                         tracks.data["playlistInfo"]["thumb"] = playlist_data["thumbnails"][0]['url']
-                    except Exception as e:
-                        print(f"Falha ao obter artwork da playlist: {q} | {repr(e)}")
+                    except Exception as exc:
+                        print(f"Falha ao obter artwork da playlist: {q} | {repr(exc)}")
 
             loadtype = "playlist"
 
@@ -2022,7 +2023,7 @@ class Music(commands.Cog):
                 components = [
                     disnake.ui.Button(emoji="💗", label="Favorite", custom_id=PlayerControls.embed_add_fav),
                     disnake.ui.Button(emoji="▶️", label="Play" + (" now" if (player.current and player.current.autoplay) else ""), custom_id=PlayerControls.embed_forceplay),
-                    disnake.ui.Button(emoji="<:add_music:588172015760965654>", label="Add to queue",
+                    disnake.ui.Button(emoji=e("add_music"), label="Add to queue",
                                       custom_id=PlayerControls.embed_enqueue_track),
                 ]
 
@@ -2033,7 +2034,7 @@ class Music(commands.Cog):
                     pass
                 components = [
                     disnake.ui.Button(emoji="💗", label="Favorite", custom_id=PlayerControls.embed_add_fav),
-                    disnake.ui.Button(emoji="<:add_music:588172015760965654>", label="Add to queue",
+                    disnake.ui.Button(emoji=e("add_music"), label="Add to queue",
                                       custom_id=PlayerControls.embed_enqueue_playlist)
                 ]
             else:
@@ -2125,7 +2126,7 @@ class Music(commands.Cog):
     @has_source()
     @check_voice()
     @commands.slash_command(
-        description=f"{desc_prefix}Skip to a specific song in the queue.",
+        description=f"{desc_prefix}រំលងទៅបទជាក់លាក់ក្នុងបញ្ជី / Skip to a specific song in the queue.",
         extras={"only_voiced": True}, cooldown=skip_back_cd, max_concurrency=skip_back_mc
     )
     @commands.contexts(guild=True)
@@ -2152,7 +2153,7 @@ class Music(commands.Cog):
     @has_player()
     @check_voice()
     @commands.slash_command(
-        description=f"{desc_prefix}Skip the currently playing song.",
+        description=f"{desc_prefix}រំលងបទដែលកំពុងចាក់ / Skip the currently playing song.",
         extras={"only_voiced": True}, cooldown=skip_back_cd, max_concurrency=skip_back_mc
     )
     @commands.contexts(guild=True)
@@ -2308,7 +2309,7 @@ class Music(commands.Cog):
     @check_voice()
     @commands.max_concurrency(1, commands.BucketType.member)
     @commands.slash_command(
-        description=f"{desc_prefix}Go back to the previous song.",
+        description=f"{desc_prefix}ត្រឡប់ទៅបទមុន / Go back to the previous song.",
         extras={"only_voiced": True}, cooldown=skip_back_cd, max_concurrency=skip_back_mc
     )
     @commands.contexts(guild=True)
@@ -2382,7 +2383,7 @@ class Music(commands.Cog):
     @has_source()
     @check_voice()
     @commands.slash_command(
-        description=f"{desc_prefix}Vote to skip the current song.",
+        description=f"{desc_prefix}បោះឆ្នោតរំលងបទបច្ចុប្បន្ន / Vote to skip the current song.",
         extras={"only_voiced": True}
     )
     @commands.contexts(guild=True)
@@ -2437,7 +2438,7 @@ class Music(commands.Cog):
     @is_dj()
     @has_source()
     @check_voice()
-    @commands.slash_command(description=f"{desc_prefix}Adjust the music volume.", extras={"only_voiced": True},
+    @commands.slash_command(description=f"{desc_prefix}កែសម្រួលកម្រិតសំឡេង / Adjust the music volume.", extras={"only_voiced": True},
                             cooldown=volume_cd, max_concurrency=volume_mc)
     @commands.contexts(guild=True)
     async def volume(
@@ -2500,7 +2501,7 @@ class Music(commands.Cog):
     @has_source()
     @check_voice()
     @commands.slash_command(
-        description=f"{desc_prefix}Pause the music.", extras={"only_voiced": True},
+        description=f"{desc_prefix}ផ្អាកភ្លេង / Pause the music.", extras={"only_voiced": True},
         cooldown=pause_resume_cd, max_concurrency=pause_resume_mc
     )
     @commands.contexts(guild=True)
@@ -2535,7 +2536,7 @@ class Music(commands.Cog):
     @has_source()
     @check_voice()
     @commands.slash_command(
-        description=f"{desc_prefix}Resume/Unpause the music.",
+        description=f"{desc_prefix}បន្តចាក់ភ្លេង / Resume/unpause the music.",
         extras={"only_voiced": True}, cooldown=pause_resume_cd, max_concurrency=pause_resume_mc
     )
     @commands.contexts(guild=True)
@@ -2579,7 +2580,7 @@ class Music(commands.Cog):
     @has_source()
     @check_voice()
     @commands.slash_command(
-        description=f"{desc_prefix}Seek/rewind the music to a specific time.",
+        description=f"{desc_prefix}រំកិលភ្លេងទៅពេលវេលាជាក់លាក់ / Seek/rewind the music to a specific time.",
         extras={"only_voiced": True}, cooldown=seek_cd, max_concurrency=seek_mc
     )
     @commands.contexts(guild=True)
@@ -2752,7 +2753,7 @@ class Music(commands.Cog):
     @has_source()
     @check_voice()
     @commands.slash_command(
-        description=f"{desc_prefix}Select loop mode: current / queue or disable.",
+        description=f"{desc_prefix}ជ្រើស loop mode: បទ/បញ្ជី/បិទ / Select loop mode: current/queue/off.",
         extras={"only_voiced": True}, cooldown=loop_cd, max_concurrency=loop_mc
     )
     @commands.contexts(guild=True)
@@ -2811,7 +2812,7 @@ class Music(commands.Cog):
     @has_source()
     @check_voice()
     @commands.slash_command(
-        description=f"{desc_prefix}Set the number of repetitions for the current song.",
+        description=f"{desc_prefix}កំណត់ចំនួនដងសម្រាប់បទបច្ចុប្បន្ន / Set repetitions for the current song.",
         extras={"only_voiced": True}, cooldown=loop_cd, max_concurrency=loop_mc
     )
     @commands.contexts(guild=True)
@@ -2860,7 +2861,7 @@ class Music(commands.Cog):
     @has_player()
     @check_voice()
     @commands.slash_command(
-        description=f"{desc_prefix}Remove a specific song from the queue.",
+        description=f"{desc_prefix}លុបបទជាក់លាក់ចេញពីបញ្ជី / Remove a specific song from the queue.",
         extras={"only_voiced": True}, max_concurrency=remove_mc
     )
     @commands.contexts(guild=True)
@@ -2914,7 +2915,7 @@ class Music(commands.Cog):
     @has_player()
     @check_voice()
     @commands.slash_command(
-        description=f"{desc_prefix}Re-add previously played songs to the queue.",
+        description=f"{desc_prefix}បន្ថែមបទដែលចាក់រួចមកវិញ / Re-add previously played songs to the queue.",
         extras={"only_voiced": True}, cooldown=queue_manipulation_cd, max_concurrency=remove_mc
     )
     @commands.contexts(guild=True)
@@ -2974,7 +2975,7 @@ class Music(commands.Cog):
     @has_player()
     @check_voice()
     @commands.slash_command(
-        description=f"{desc_prefix}Rotate the queue to the specified song.",
+        description=f"{desc_prefix}បង្វិលបញ្ជីទៅបទដែលបញ្ជាក់ / Rotate the queue to the specified song.",
         extras={"only_voiced": True}, cooldown=queue_manipulation_cd, max_concurrency=remove_mc
     )
     @commands.contexts(guild=True)
@@ -3042,7 +3043,7 @@ class Music(commands.Cog):
     @has_player()
     @check_voice()
     @commands.slash_command(extras={"only_voiced": True}, cooldown=song_request_thread_cd,
-                            description=f"{desc_prefix}Create a temporary thread/conversation for song requests")
+                            description=f"{desc_prefix}បង្កើត thread សម្រាប់ស្នើភ្លេង / Create a thread for song requests.")
     @commands.contexts(guild=True)
     async def song_request_thread(self, inter: disnake.ApplicationCommandInteraction):
 
@@ -3112,7 +3113,7 @@ class Music(commands.Cog):
     @has_source()
     @check_voice()
     @commands.slash_command(
-        description=f"{desc_prefix}Enable/Disable the nightcore effect (Sped-up music with a higher pitch).",
+        description=f"{desc_prefix}បើក/បិទ nightcore (លឿន+សំឡេងខ្ពស់) / Toggle nightcore effect.",
         extras={"only_voiced": True}, cooldown=nightcore_cd, max_concurrency=nightcore_mc,
     )
     @commands.contexts(guild=True)
@@ -3147,7 +3148,7 @@ class Music(commands.Cog):
     async def now_playing_legacy(self, ctx: CustomContext):
         await self.now_playing.callback(self=self, inter=ctx)
 
-    @commands.slash_command(description=f"{desc_prefix}Display info about the song you are currently listening to (in any server).",
+    @commands.slash_command(description=f"{desc_prefix}បង្ហាញព័ត៌មានបទកំពុងស្ដាប់ / Display info about the current song.",
                             cooldown=np_cd, extras={"allow_private": True})
     @commands.contexts(guild=True)
     async def now_playing(self, inter: disnake.ApplicationCommandInteraction):
@@ -3290,7 +3291,7 @@ class Music(commands.Cog):
                 if qsize > 3:
                     components.append(
                         disnake.ui.Button(custom_id=PlayerControls.queue, label="View full list",
-                                          emoji="<:music_queue:703761160679194734>"))
+                                          emoji=e("queue")))
 
             elif player.queue:
                 txt += f"> 🎶 **⠂Songs in queue:** `{len(player.queue)}`\n"
@@ -3347,7 +3348,7 @@ class Music(commands.Cog):
 
     @has_source()
     @check_voice()
-    @commands.slash_command(description=f"{desc_prefix}Send the player controller to a specific/current channel.",
+    @commands.slash_command(description=f"{desc_prefix}បញ្ជូន player controller ទៅឆានែល / Send player controller to a channel.",
                             extras={"only_voiced": True}, cooldown=controller_cd, max_concurrency=controller_mc)
     @commands.contexts(guild=True)
     async def controller(self, inter: disnake.ApplicationCommandInteraction):
@@ -3430,7 +3431,7 @@ class Music(commands.Cog):
     @has_player()
     @check_voice()
     @commands.slash_command(
-        description=f"{desc_prefix}Add a member to the DJ list in the current player session.",
+        description=f"{desc_prefix}បន្ថែមសមាជិកទៅបញ្ជី DJ / Add a member to the DJ list in the current session.",
         extras={"only_voiced": True}
     )
     @commands.contexts(guild=True)
@@ -3484,7 +3485,7 @@ class Music(commands.Cog):
     @has_player()
     @check_voice()
     @commands.slash_command(
-        description=f"{desc_prefix}Remove a member from the DJ list in the current player session.",
+        description=f"{desc_prefix}យកសមាជិកចេញពីបញ្ជី DJ / Remove a member from the DJ list.",
         extras={"only_voiced": True}
     )
     @commands.contexts(guild=True)
@@ -3538,7 +3539,7 @@ class Music(commands.Cog):
     @has_player(check_node=False)
     @check_voice()
     @commands.slash_command(
-        description=f"{desc_prefix}View the command usage log.",
+        description=f"{desc_prefix}មើល log ការប្រើពាក្យបញ្ជា / View the command usage log.",
         extras={"only_voiced": True}
     )
     @commands.contexts(guild=True)
@@ -3576,7 +3577,7 @@ class Music(commands.Cog):
     @has_player(check_node=False)
     @check_voice()
     @commands.slash_command(
-        description=f"{desc_prefix}Stop the player and disconnect me from the voice channel.",
+        description=f"{desc_prefix}ឈប់+ផ្ដាច់ចេញពីឆានែលសំឡេង / Stop & disconnect from the voice channel.",
         extras={"only_voiced": True}
     )
     @commands.contexts(guild=True)
@@ -3637,7 +3638,7 @@ class Music(commands.Cog):
     @has_player()
     @check_voice()
     @commands.slash_command(
-        description=f"{desc_prefix}Experimental: Save the current song and queue to reuse them at any time.",
+        description=f"{desc_prefix}រក្សាទុកបទ+បញ្ជី / Save current song & queue to reuse later.",
         extras={"only_voiced": True}, cooldown=queue_manipulation_cd, max_concurrency=remove_mc
     )
     @commands.contexts(guild=True)
@@ -3730,7 +3731,7 @@ class Music(commands.Cog):
     @is_dj()
     @q.sub_command(
         name="shuffle",
-        description=f"{desc_prefix}Shuffle the songs in the queue",
+        description=f"{desc_prefix}ច្របូកច្របល់បទក្នុងបញ្ជី / Shuffle the songs in the queue.",
         extras={"only_voiced": True}, cooldown=queue_manipulation_cd, max_concurrency=remove_mc)
     async def shuffle_(self, inter: disnake.ApplicationCommandInteraction):
 
@@ -3763,7 +3764,7 @@ class Music(commands.Cog):
 
     @is_dj()
     @q.sub_command(
-        description=f"{desc_prefix}Reverse the order of songs in the queue",
+        description=f"{desc_prefix}បញ្ច្រាសលំដាប់បទក្នុងបញ្ជី / Reverse the order of songs in the queue.",
         extras={"only_voiced": True}, cooldown=queue_manipulation_cd, max_concurrency=remove_mc
     )
     async def reverse(self, inter: disnake.ApplicationCommandInteraction):
@@ -3797,7 +3798,7 @@ class Music(commands.Cog):
 
     @commands.max_concurrency(1, commands.BucketType.member)
     @q.sub_command(
-        description=f"{desc_prefix}Display the songs that are in the queue.", max_concurrency=queue_show_mc
+        description=f"{desc_prefix}បង្ហាញបទដែលនៅក្នុងបញ្ជី / Display the songs in the queue.", max_concurrency=queue_show_mc
     )
     async def display(self, inter: disnake.ApplicationCommandInteraction):
 
@@ -3899,7 +3900,7 @@ class Music(commands.Cog):
     @check_voice()
     @q.sub_command(
         name="clear",
-        description=f"{desc_prefix}Clear the music queue.",
+        description=f"{desc_prefix}សម្អាតបញ្ជីភ្លេង / Clear the music queue.",
         extras={"only_voiced": True}, cooldown=queue_manipulation_cd, max_concurrency=remove_mc
     )
     async def clear(
@@ -4202,7 +4203,7 @@ class Music(commands.Cog):
     @check_voice()
     @commands.slash_command(
         name="move",
-        description=f"{desc_prefix}Move songs in the queue.",
+        description=f"{desc_prefix}ផ្លាស់ទីបទក្នុងបញ្ជី / Move songs in the queue.",
         extras={"only_voiced": True}, cooldown=queue_manipulation_cd, max_concurrency=remove_mc
     )
     @commands.contexts(guild=True)
@@ -4635,7 +4636,7 @@ class Music(commands.Cog):
     @has_player()
     @check_voice()
     @commands.slash_command(
-        description=f"{desc_prefix}Enable/Disable the restricted command mode that requires DJ/Staff.",
+        description=f"{desc_prefix}បើក/បិទរបៀប DJ/Staff only / Toggle restricted command mode (DJ/Staff).",
         extras={"only_voiced": True}, cooldown=restrict_cd, max_concurrency=restrict_mc)
     @commands.contexts(guild=True)
     async def restrict_mode(self, inter: disnake.ApplicationCommandInteraction):
@@ -4673,7 +4674,7 @@ class Music(commands.Cog):
     @check_voice()
     @commands.slash_command(
         name="247",
-        description=f"{desc_prefix}Enable/Disable the 24/7 player mode (In testing).",
+        description=f"{desc_prefix}បើក/បិទរបៀប 24/7 (កំពុងសាកល្បង) / Enable/Disable 24/7 player mode (testing).",
         default_member_permissions=disnake.Permissions(manage_guild=True),
         extras={"only_voiced": True}, cooldown=nonstop_cd, max_concurrency=nonstop_mc
     )
@@ -4724,7 +4725,7 @@ class Music(commands.Cog):
     @check_voice()
     @commands.slash_command(
         name="autoplay",
-        description=f"{desc_prefix}Enable/Disable automatic playback when the queue runs out of songs.",
+        description=f"{desc_prefix}បើក/បិទចាក់ស្វ័យពេលអស់បញ្ជី / Toggle auto playback when queue runs out.",
         extras={"only_voiced": True}, cooldown=autoplay_cd, max_concurrency=autoplay_mc
     )
     @commands.contexts(guild=True)
@@ -4757,7 +4758,7 @@ class Music(commands.Cog):
     @is_dj()
     @commands.cooldown(1, 10, commands.BucketType.guild)
     @commands.slash_command(
-        description=f"{desc_prefix}Migrate the player to another music server."
+        description=f"{desc_prefix}ផ្លាស់ player ទៅ music server ផ្សេង / Migrate player to another music server."
     )
     @commands.contexts(guild=True)
     async def change_node(
@@ -4868,7 +4869,7 @@ class Music(commands.Cog):
 
     @commands.max_concurrency(1, commands.BucketType.member, wait=False)
     @commands.slash_command(
-        description=f"{desc_prefix}Manage your favorites/integrations and server links.",
+        description=f"{desc_prefix}គ្រប់គ្រងបទចូលចិត្ត / Manage favorites, integrations & server links.",
         cooldown=fav_cd, extras={"allow_private": True})
     @commands.contexts(guild=True)
     async def fav_manager(self, inter: disnake.ApplicationCommandInteraction):
@@ -5822,7 +5823,7 @@ class Music(commands.Cog):
                     choices["Playlist"] = {
                         "name": player.current.playlist_name,
                         "url": player.current.playlist_url,
-                        "emoji": "<:music_queue:703761160679194734>"
+                        "emoji": e("queue")
                     }
                     msg += f"**Playlist:** [`{player.current.playlist_name}`]({player.current.playlist_url})\n"
 
@@ -6819,7 +6820,7 @@ class Music(commands.Cog):
                 components.extend(
                     [
                         disnake.ui.Button(emoji="💗", label="Favoritar", custom_id=PlayerControls.embed_add_fav),
-                        disnake.ui.Button(emoji="<:add_music:588172015760965654>", label="Adicionar na fila",custom_id=PlayerControls.embed_enqueue_playlist)
+                        disnake.ui.Button(emoji=e("add_music"), label="Adicionar na fila",custom_id=PlayerControls.embed_enqueue_playlist)
                     ]
                 )
 
@@ -6871,8 +6872,8 @@ class Music(commands.Cog):
                 components.extend(
                     [
                         disnake.ui.Button(emoji="💗", label="Favoritar", custom_id=PlayerControls.embed_add_fav),
-                        disnake.ui.Button(emoji="<:play:914841137938829402>", label="Tocar" + (" agora" if (player.current and player.current.autoplay) else ""), custom_id=PlayerControls.embed_forceplay),
-                        disnake.ui.Button(emoji="<:add_music:588172015760965654>", label="Adicionar na fila",
+                        disnake.ui.Button(emoji=e("play"), label="Tocar" + (" agora" if (player.current and player.current.autoplay) else ""), custom_id=PlayerControls.embed_forceplay),
+                        disnake.ui.Button(emoji=e("add_music"), label="Adicionar na fila",
                                           custom_id=PlayerControls.embed_enqueue_track)
                     ]
                 )

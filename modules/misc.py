@@ -447,7 +447,7 @@ class Misc(commands.Cog):
 
 
     @commands.slash_command(
-        description=f"{desc_prefix}Display information about me.", cooldown=about_cd,
+        description=f"{desc_prefix}បង្ហាញព័ត៌មានអំពីខ្ញុំ / Display information about me.", cooldown=about_cd,
         extras={"allow_private": True}
     )
     @commands.contexts(guild=True)
@@ -777,7 +777,7 @@ class Misc(commands.Cog):
 
 
     @commands.slash_command(
-        description=f"{desc_prefix}Display my invite link for you to add me to your server.",
+        description=f"{desc_prefix}បង្ហាញតំណអញ្ជើញ Bot / Display my invite link for your server.",
         extras={"allow_private": True}
     )
     @commands.contexts(guild=True)

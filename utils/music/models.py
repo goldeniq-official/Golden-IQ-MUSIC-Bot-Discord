@@ -27,6 +27,7 @@ from utils.music.converters import fix_characters, time_format, get_button_style
 from utils.music.errors import GenericError, PoolException
 from utils.music.filters import AudioFilter
 from utils.music.lastfm_tools import LastFmException
+from utils.music.ui.emoji_set import e as _e
 from utils.music.skin_utils import skin_converter
 from utils.music.track_encoder import encode_track, DataWriter
 from utils.others import music_source_emoji, send_idle_embed, PlayerControls, string_to_file
@@ -2236,7 +2237,7 @@ class LavalinkPlayer(wavelink.Player):
 
         controller_opts = [
             disnake.SelectOption(
-                emoji="<:add_music:588172015760965654>", value=PlayerControls.add_song, label="Add song",
+                emoji=_e("add_music"), value=PlayerControls.add_song, label="Add song",
                 description=f"Play a new song/playlist."
             ),
         ]
@@ -2627,7 +2628,7 @@ class LavalinkPlayer(wavelink.Player):
                     disnake.ui.Button(
                         emoji="⏭️", custom_id=PlayerControls.skip),
                     disnake.ui.Button(
-                        emoji="<:music_queue:703761160679194734>", custom_id=PlayerControls.queue,
+                        emoji=_e("queue"), custom_id=PlayerControls.queue,
                         disabled=not (self.queue or self.queue_autoplay)),
                     disnake.ui.Select(
                         placeholder="More options:",
@@ -2635,7 +2636,7 @@ class LavalinkPlayer(wavelink.Player):
                         min_values=0, max_values=1, required = False,
                         options=[
                             disnake.SelectOption(
-                                label="Add song", emoji="<:add_music:588172015760965654>",
+                                label="Add song", emoji=_e("add_music"),
                                 value=PlayerControls.add_song,
                                 description="Add a song/playlist to the queue."
                             ),
@@ -2670,7 +2671,7 @@ class LavalinkPlayer(wavelink.Player):
                                 description="Enable/Disable loop for song/queue."
                             ),
                             disnake.SelectOption(
-                                label=("Disable" if self.nightcore else "Enable") + " nightcore effect", emoji="🇳",
+                                label=("Disable" if self.nightcore else "Enable") + " nightcore effect", emoji=_e("nightcore"),
                                 value=PlayerControls.nightcore,
                                 description="Effect that increases the speed and pitch of the song."
                             ),
@@ -2681,7 +2682,7 @@ class LavalinkPlayer(wavelink.Player):
                                 description="Automatic song playback system when the queue is empty."
                             ),
                             disnake.SelectOption(
-                                label="Last.fm scrobble", emoji="<:Lastfm:1278883704097341541>",
+                                label="Last.fm scrobble", emoji=_e("lastfm"),
                                 value=PlayerControls.lastfm_scrobble,
                                 description="Enable/disable song scrobbling/recording to your last.fm account."
                             ),
@@ -2724,7 +2725,7 @@ class LavalinkPlayer(wavelink.Player):
                 if self.mini_queue_feature:
                     data["components"][5].options.append(
                         disnake.SelectOption(
-                            label="Player mini-queue", emoji="<:music_queue:703761160679194734>",
+                            label="Player mini-queue", emoji=_e("queue"),
                             value=PlayerControls.miniqueue,
                             description="Enable/Disable the player mini-queue."
                         )

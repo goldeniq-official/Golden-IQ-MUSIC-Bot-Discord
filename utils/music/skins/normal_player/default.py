@@ -2,12 +2,12 @@
 """Default normal-player skin — Spotify-card premium aesthetic.
 
 Visual decisions:
-    1. Artwork is the visual hero (set_image — full-width card).
+    1. Artwork as thumbnail, with RGB decorative bar as image — full-width card).
     2. Title is the embed.title (Discord's largest text), linked & blue.
     3. Artist uses `#` markdown for a second tier of prominence.
     4. Body avoids emoji-per-item chip rows; meta info is one prose line.
     5. Footer carries quiet stats only.
-    6. No decorative rainbow bar — the artwork *is* the visual.
+    6. RGB Decorative rainbow bar included — the artwork *is* the visual.
 """
 from __future__ import annotations
 
@@ -153,7 +153,8 @@ class DefaultSkin:
         embed.description = "\n".join(lines)
 
         # ── Artwork as the hero visual (full-width card) ───────────────
-        embed.set_image(url=player.current.thumb)
+        embed.set_thumbnail(url=player.current.thumb)
+        embed.set_image(url=theme.PREMIUM_DECORATIVE_BAR)
 
         if player.current_hint:
             embed.set_footer(text=f"{emoji('tip')}   {player.current_hint}")

@@ -22,6 +22,13 @@ from typing import Optional
 
 # Unicode defaults. Every emoji name used by the UI must be defined here.
 # Add new names alongside the skin code that needs them.
+#
+# IMPORTANT: Discord rejects non-emoji Unicode glyphs (math symbols, punctuation,
+# arrows from non-emoji blocks) with "Invalid emoji". Every value here MUST be a
+# real Unicode emoji (something Discord recognizes). Glyphs like ⨁ (U+2A01) or
+# ∞ (U+221E) look fine in chat content but blow up when used as Button.emoji
+# or SelectOption.emoji. When in doubt, pick from the Emoji standard
+# (https://unicode.org/emoji/charts/full-emoji-list.html).
 _DEFAULTS: dict[str, str] = {
     # Transport controls
     "play_pause": "⏯️",
@@ -30,19 +37,19 @@ _DEFAULTS: dict[str, str] = {
     "stop": "⏹️",
     "back": "⏮️",
     "skip": "⏭️",
-    "queue": "🎶",
+    "queue": "🎧",
     # Menu / actions
-    "more": "⋯",
+    "more": "⚙️",
     "add_music": "➕",
-    "favorite": "💗",
-    "favorite_full": "💖",
+    "favorite": "🤍",
+    "favorite_full": "❤️",
     "seek_start": "⏪",
     "shuffle": "🔀",
     "readd": "🔁",
     "loop": "🔁",
     "loop_one": "🔂",
     "nightcore": "🎚️",
-    "autoplay": "🔄",
+    "autoplay": "♾️",
     "restrict": "🔐",
     "lastfm": "🎵",
     "lyrics": "📃",
@@ -56,7 +63,7 @@ _DEFAULTS: dict[str, str] = {
     "request": "🎧",
     "recommendation": "✨",
     "album": "💿",
-    "playlist": "📀",
+    "playlist": "📑",
     "infinity": "♾️",
     "tip": "💡",
     "warn": "⚠️",
@@ -70,7 +77,7 @@ _DEFAULTS: dict[str, str] = {
     "prev": "◀️",
     "next": "▶️",
     "last": "⏭️",
-    "close": "✖️",
+    "close": "❌",
     "refresh": "🔄",
 }
 
