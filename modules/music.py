@@ -6198,7 +6198,11 @@ class Music(commands.Cog):
 
             try:
                 await message.delete(delay=delay)
-            except:
+            except (disnake.NotFound, disnake.Forbidden):
+                pass
+            except disnake.HTTPException:
+                pass
+            except Exception:
                 traceback.print_exc()
 
     @commands.Cog.listener("on_song_request")
@@ -7334,15 +7338,18 @@ class Music(commands.Cog):
                         search_query, track_cls=LavalinkTrack, playlist_cls=LavalinkPlaylist, requester=user.id,
                         #check_title=80
                     )
-                except Exception as e:
-                    #traceback.print_exc()
+                except wavelink.TrackNotFound as e:
                     exceptions.add(repr(e))
-
-                    if not isinstance(e, wavelink.TrackNotFound):
-                        print(f"Falha ao processar busca...\n{query}\n{traceback.format_exc()}")
-                        node_retry = True
-                    elif not isinstance(e, GenericError):
+                    if not isinstance(e, GenericError):
                         self.bot.dispatch("custom_error", ctx=ctx, error=e)
+                except wavelink.TrackLoadError as e:
+                    exceptions.add(repr(e))
+                    print(f"Falha ao processar busca... [{n.identifier}/{search_provider}] {query} -> {e}")
+                    node_retry = True
+                except Exception as e:
+                    exceptions.add(repr(e))
+                    print(f"Falha ao processar busca...\n{query}\n{traceback.format_exc()}")
+                    node_retry = True
 
                 if tracks or not source:
                     break

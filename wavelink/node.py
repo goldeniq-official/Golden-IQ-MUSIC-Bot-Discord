@@ -426,14 +426,14 @@ class Node:
             if self.version == 4:
                 new_data['exception'] = new_data
 
-            try:
-                error = f"There was an error of severity '{new_data['exception']['severity']}' while loading tracks.\n\n{new_data['exception']['message']}"
-            except KeyError:
-                error = f"There was an error of severity '{new_data['exception']['severity']}:\n{new_data['exception']['error']}"
+            exc_data = new_data.get('exception') or {}
+            severity = exc_data.get('severity', 'UNKNOWN')
+            message = exc_data.get('message') or exc_data.get('error') or exc_data.get('cause') or 'Unknown error'
+            error = f"There was an error of severity '{severity}' while loading tracks.\n\n{message}"
             e = TrackLoadError(error=error, node=self, data=new_data)
 
-            if not e.message:
-                e.message = new_data['exception']['error']
+            if not e.message or e.message.endswith(' - None'):
+                e.message = f"{self.identifier} - {message}"
 
             if ytid:
 
