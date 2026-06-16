@@ -1898,11 +1898,22 @@ class Music(commands.Cog):
             if tracks.tracks[0].info["sourceName"] == "youtube":
 
                 try:
-                    q = f"https://www.youtube.com/playlist?list={query.split('&list=')[1]}"
+                    list_id = query.split('&list=')[1].split('&')[0]
+                    q = f"https://www.youtube.com/playlist?list={list_id}"
                 except:
+                    list_id = ""
                     q = query
 
-                if not await bot.is_owner(inter.author):
+                # YouTube Mix/Radio playlists (RD prefix) cannot be fetched via playlist API
+                if list_id.startswith("RD"):
+                    try:
+                        first_track_thumb = tracks.tracks[0].info.get("artworkUrl") or tracks.tracks[0].info.get("thumbnail")
+                        if first_track_thumb:
+                            tracks.data["playlistInfo"]["thumb"] = first_track_thumb
+                    except Exception:
+                        pass
+
+                elif not await bot.is_owner(inter.author):
                     try:
                         async with bot.session.get((oembed_url:=f"https://www.youtube.com/oembed?url={q}")) as r:
                             try:
