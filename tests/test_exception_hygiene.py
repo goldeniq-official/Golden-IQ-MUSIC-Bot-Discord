@@ -24,7 +24,8 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 # matches `except:` inside commented-out triple-quoted blocks. The real
 # figure is 303.
 BUDGETS = {
-    "modules/music/__init__.py": 99,
+    "modules/music/__init__.py": 85,
+    "modules/music/controller.py": 14,
     "utils/music/models.py": 91,
     "modules/music_settings.py": 27,
     "utils/music/interactions.py": 11,

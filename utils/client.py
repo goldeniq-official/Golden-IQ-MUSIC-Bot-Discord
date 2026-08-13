@@ -1461,40 +1461,57 @@ class BotCore(commands.AutoShardedBot):
 
         for module_dir in modules_dir:
 
-            for item in os.walk(module_dir):
-                files = filter(lambda f: f.endswith('.py'), item[-1])
+            if not os.path.isdir(module_dir):
+                continue
 
-                for file in files:
+            # Discover both flat modules (modules/misc.py) and packages
+            # (modules/music/ with an __init__.py). The previous version walked
+            # recursively but kept only the bare filename, so a package's
+            # internals resolved to the wrong dotted path — modules/music/
+            # controller.py became "modules.controller" — and the package
+            # itself was never loaded at all. Package internals are not
+            # extensions and must not be loaded directly; only the package is.
+            entries = []
 
-                    if module_list:
-                        if not [i for i in module_list if file.endswith(i)]:
-                            continue
-                    filename, _ = os.path.splitext(file)
-                    module_filename = os.path.join(module_dir, filename).replace('\\', '.').replace('/', '.')
+            for name in sorted(os.listdir(module_dir)):
+                full_path = os.path.join(module_dir, name)
+
+                if os.path.isfile(full_path) and name.endswith(".py"):
+                    entries.append((name[:-3], f"{module_dir}.{name[:-3]}"))
+
+                elif os.path.isdir(full_path) and os.path.isfile(
+                        os.path.join(full_path, "__init__.py")):
+                    entries.append((name, f"{module_dir}.{name}"))
+
+            for filename, module_filename in entries:
+
+                if module_list:
+                    if not [i for i in module_list if f"{filename}.py".endswith(i)]:
+                        continue
+                try:
+                    self.unload_extension(module_filename)
+                    self.load_extension(module_filename)
+                    if not self.bot_ready and load_modules_log:
+                        print(f"🟦 - {bot_name} - {filename}.py Reloaded.")
+                    load_status["reloaded"].append(f"{filename}.py")
+                except (commands.ExtensionAlreadyLoaded, commands.ExtensionNotLoaded):
                     try:
-                        self.unload_extension(module_filename)
                         self.load_extension(module_filename)
                         if not self.bot_ready and load_modules_log:
-                            print(f"🟦 - {bot_name} - {filename}.py Reloaded.")
-                        load_status["reloaded"].append(f"{filename}.py")
-                    except (commands.ExtensionAlreadyLoaded, commands.ExtensionNotLoaded):
-                        try:
-                            self.load_extension(module_filename)
-                            if not self.bot_ready and load_modules_log:
-                                print(f"🟩 - {bot_name} - {filename}.py Loaded.")
-                            load_status["loaded"].append(f"{filename}.py")
-                        except Exception as e:
-                            print(f"❌- {bot_name} - Failed to load/reload the module: {filename}")
-                            if not self.bot_ready:
-                                raise e
-                            load_status["failed"].append(f"{filename}.py")
-                            traceback.print_exc()
+                            print(f"🟩 - {bot_name} - {filename}.py Loaded.")
+                        load_status["loaded"].append(f"{filename}.py")
                     except Exception as e:
-                        print(f"❌ - {bot_name} - Failed to load/reload the module: {filename}")
+                        print(f"❌- {bot_name} - Failed to load/reload the module: {filename}")
                         if not self.bot_ready:
                             raise e
                         load_status["failed"].append(f"{filename}.py")
                         traceback.print_exc()
+                except Exception as e:
+                    print(f"❌ - {bot_name} - Failed to load/reload the module: {filename}")
+                    if not self.bot_ready:
+                        raise e
+                    load_status["failed"].append(f"{filename}.py")
+                    traceback.print_exc()
 
         if not self.config["ENABLE_DISCORD_URLS_PLAYBACK"]:
             self.remove_slash_command("play_music_file")
