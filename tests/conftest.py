@@ -65,9 +65,27 @@ class FakeBot:
         self.user = FakeMember(id=4004, name="Golden IQ MUSIC")
         self.config = {"HINT_RATE": 4, "EMBED_COLOR": None}
         self.default_prefix = "!!"
+        self.bot_ready = True
+        self.dispatched: list[tuple] = []
+        # No active player. This is a real, common scenario: a user clicks a
+        # stale player message after the bot has left the voice channel. The
+        # control must tell them something, not die silently.
+        self.music = SimpleNamespace(players={})
 
     def get_color(self, _me=None):
         return disnake.Color(0xD4AF37)
+
+    def is_ready(self):
+        return True
+
+    def dispatch(self, event, *args, **kwargs):
+        # Records instead of firing. The dispatcher uses this to hand errors
+        # to the error handler cog, so swallowing it here would hide the very
+        # failures these tests exist to surface.
+        self.dispatched.append((event, args, kwargs))
+
+    def get_channel(self, cid):
+        return SimpleNamespace(id=cid, guild=FakeGuild())
 
 
 class FakeTrack:
@@ -146,6 +164,54 @@ class FakePlayer:
 
     def __len__(self):
         return len(self.queue)
+
+
+class _FakeResponse:
+    def __init__(self, owner):
+        self._owner = owner
+
+    def is_done(self):
+        return self._owner.responded
+
+    async def defer(self, *a, **kw):
+        self._owner.responded = True
+        self._owner.response_calls.append("defer")
+
+    async def edit_message(self, *a, **kw):
+        self._owner.responded = True
+        self._owner.response_calls.append("edit_message")
+
+    async def send_message(self, *a, **kw):
+        self._owner.responded = True
+        self._owner.response_calls.append("send_message")
+
+
+class FakeInteraction:
+    """Implements the disnake.MessageInteraction surface the handlers touch."""
+
+    def __init__(self, custom_id: str, *, values=None, player=None):
+        self.responded = False
+        self.response_calls: list[str] = []
+        self.sent: list[dict] = []
+        self.data = SimpleNamespace(custom_id=custom_id)
+        self.values = values or []
+        self.guild_id = 3003
+        self.channel_id = 2002
+        self.author = FakeMember()
+        self.guild = player.guild if player else FakeGuild()
+        self.channel = SimpleNamespace(id=2002, guild=self.guild)
+        self.message = SimpleNamespace(id=5005, embeds=[], author=self.author,
+                                       channel=self.channel)
+        self.response = _FakeResponse(self)
+        self.application_command = None
+
+    async def send(self, content=None, **kw):
+        self.responded = True
+        self.response_calls.append("send")
+        self.sent.append({"content": content, **kw})
+
+    async def edit_original_message(self, **kw):
+        self.response_calls.append("edit_original_message")
 
 
 def make_player(**overrides) -> FakePlayer:
