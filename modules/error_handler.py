@@ -257,7 +257,8 @@ class ErrorHandler(commands.Cog):
                 if ctx.cog:
                     try:
                         ctx.args.remove(ctx.cog)
-                    except:
+                    except ValueError:
+                        # Already absent from args; nothing to strip.
                         pass
                 try:
                     await ctx.command(*ctx.args, **ctx.kwargs)
@@ -316,7 +317,11 @@ class ErrorHandler(commands.Cog):
         try:
             if error.self_delete and ctx.channel.permissions_for(ctx.guild.me).manage_messages:
                 await ctx.message.delete()
-        except:
+        except AttributeError:
+            # error has no self_delete, or ctx lacks guild/channel context (DM).
+            pass
+        except disnake.HTTPException:
+            # Message already gone, or deletion refused — not worth surfacing.
             pass
 
         if resp_msg:
@@ -330,7 +335,8 @@ class ErrorHandler(commands.Cog):
             else:
                 try:
                     func = ctx.store_message.edit
-                except:
+                except AttributeError:
+                    # No stored message to edit — send a fresh one instead.
                     func = ctx.send
 
             await func(components=components, **kwargs)
