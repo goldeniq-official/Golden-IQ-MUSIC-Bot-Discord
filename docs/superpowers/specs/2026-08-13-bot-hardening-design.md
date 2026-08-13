@@ -213,8 +213,14 @@ an exception silently.
   nothing to convert. The slowness must be explained by the remaining items
   below, or by something not yet identified — it should not be claimed fixed
   without a measurement.
-- Cache `guild_data`, currently re-read from MongoDB on essentially every
-  interaction, with explicit invalidation on write.
+- **Confirmed, with a correction to the diagnosis.** `guild_data` was indeed
+  reaching the database on essentially every read, but not for the stated
+  reason: `BaseDB` already held a `TTLCache(maxsize=1000, ttl=300)` and
+  `get_data` already consulted it. The cache was simply never populated on a
+  read — only `update_data` wrote to it — so the lookup could only hit for a
+  guild written within the TTL window. Both `MongoDatabase.get_data` and
+  `LocalDatabase.get_data` now populate on read. Measured with a counting
+  fake: 5 repeated reads went from 5 database round trips to 1.
 - Review the player update path (`auto_update`, progress-bar re-render rate)
   and reduce redundant message edits, which also lowers rate-limit pressure.
 - Measure before and after; report real numbers rather than asserting
