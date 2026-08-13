@@ -182,3 +182,43 @@ def test_egg_has_no_duplicate_variables(egg):
     names = [v["env_variable"] for v in egg["variables"]]
     dupes = {n for n in names if names.count(n) > 1}
     assert not dupes, f"duplicate panel variables would confuse the UI: {dupes}"
+
+
+def test_start_script_is_valid_bash():
+    import shutil
+    import subprocess
+
+    bash = shutil.which("bash")
+    if not bash:
+        pytest.skip("bash not available")
+    result = subprocess.run([bash, "-n", str(START_SH)],
+                            capture_output=True, text=True)
+    assert result.returncode == 0, f"start.sh has a syntax error:\n{result.stderr}"
+
+
+def test_start_script_aborts_when_dependencies_fail():
+    """Without an explicit check the bot started anyway and died on ImportError.
+
+    start.sh does not use `set -e`, so an unchecked pip failure falls through
+    to the exec.
+    """
+    source = START_SH.read_text(encoding="utf-8")
+    assert "if ! python3 -m pip install" in source, (
+        "pip install result must be checked before starting the bot"
+    )
+    # Match the directive at the start of a line, not the phrase inside the
+    # comment that explains why it is absent.
+    has_set_e = any(re.match(r"\s*set\s+-[a-z]*e", line)
+                    for line in source.splitlines())
+    assert not has_set_e, (
+        "if set -e is added, simplify the explicit pip check rather than "
+        "leaving both in place"
+    )
+
+
+def test_start_script_guards_the_python_version():
+    source = START_SH.read_text(encoding="utf-8")
+    assert "sys.version_info[:2] >= (3, 11)" in source, (
+        "an old Docker image should fail with a clear message, not an "
+        "obscure error deeper in startup"
+    )
