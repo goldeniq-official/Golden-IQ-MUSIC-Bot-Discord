@@ -221,8 +221,16 @@ an exception silently.
   guild written within the TTL window. Both `MongoDatabase.get_data` and
   `LocalDatabase.get_data` now populate on read. Measured with a counting
   fake: 5 repeated reads went from 5 database round trips to 1.
-- Review the player update path (`auto_update`, progress-bar re-render rate)
-  and reduce redundant message edits, which also lowers rate-limit pressure.
+- **Already implemented; no change made.** `LavalinkPlayer.invoke_np` compares
+  the freshly rendered payload against `self.last_data` and skips the Discord
+  edit when they match (`utils/music/models.py:2561`). Adding a second
+  deduplication layer would be redundant machinery on a critical path. What
+  was missing is a guarantee that the renders feeding that comparison are
+  deterministic — a skin that varied its output for unchanged state would
+  defeat the check silently and edit on every tick.
+  `tests/test_render_rate.py` now verifies all 15 skins are deterministic,
+  and that real changes (position, pause) still produce a new payload so the
+  dedup cannot freeze a live player.
 - Measure before and after; report real numbers rather than asserting
   improvement.
 
