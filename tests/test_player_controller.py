@@ -56,18 +56,14 @@ def test_dispatcher_signature_is_stable():
 # Controls that silently return with no user feedback at all.
 # See test_control_never_dies_silently for why this is the bug that produces
 # dead buttons.
-SILENT_RETURN_BUG = (
-    "Phase 2: modules/music.py:5316-5323 returns without acknowledging the "
-    "interaction when the source embed has no author.url and no URL in its "
-    "description — and again inside a bare `except:`. Discord shows "
-    "'This interaction failed' after 3s. Triggers in production when the "
-    "embed was edited, description is None, or the message has no embeds."
-)
-KNOWN_SILENT = {
-    "embed_forceplay": SILENT_RETURN_BUG,
-    "embed_enqueue_track": SILENT_RETURN_BUG,
-    "embed_enqueue_playlist": SILENT_RETURN_BUG,
-}
+#
+# Fixed and removed from this map:
+#   embed_forceplay, embed_enqueue_track, embed_enqueue_playlist —
+#   modules/music.py resolved the track URL with two bare `return`
+#   statements (one inside a bare `except:`) that left the interaction
+#   unacknowledged. Both paths now raise GenericError, which the outer
+#   handler dispatches to the ErrorHandler cog as a bilingual message.
+KNOWN_SILENT: dict[str, str] = {}
 
 
 def _dispatch_params():

@@ -5314,13 +5314,31 @@ class Music(commands.Cog):
         ):
 
             try:
+                # Resolve the track URL from the source embed. Every failure
+                # path here must tell the user something: returning silently
+                # leaves the interaction unacknowledged, and Discord shows
+                # "This interaction failed" after 3 seconds (or the button
+                # simply looks dead). Reachable in normal use when the embed
+                # was edited, has no description, or the message lost its
+                # embeds entirely.
                 try:
-                    if not (url:=interaction.message.embeds[0].author.url):
-                        if not (matches:=URL_REG.findall(interaction.message.embeds[0].description)):
-                            return
-                        url = matches[0].split(">")[0]
-                except:
-                    return
+                    embed = interaction.message.embeds[0]
+                except (IndexError, AttributeError):
+                    raise GenericError(
+                        "**រកមិនឃើញព័ត៌មានបទចម្រៀងក្នុងសារនេះទេ សូមព្យាយាមម្ដងទៀត។ / "
+                        "The track information is missing from this message — please try again.**"
+                    )
+
+                url = getattr(embed.author, "url", None)
+
+                if not url:
+                    matches = URL_REG.findall(embed.description or "")
+                    if not matches:
+                        raise GenericError(
+                            "**រកមិនឃើញតំណបទចម្រៀងក្នុងសារនេះទេ។ / "
+                            "No track link was found in this message.**"
+                        )
+                    url = matches[0].split(">")[0]
 
                 try:
                     await self.player_interaction_concurrency.acquire(interaction)
