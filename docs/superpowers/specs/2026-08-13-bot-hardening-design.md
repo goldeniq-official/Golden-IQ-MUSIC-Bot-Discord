@@ -45,7 +45,7 @@ Static findings:
 | Blocking `requests.get()` in async paths | `utils/client.py:614`, `utils/music/local_lavalink.py:19`, `utils/music/remote_lavalink_serverlist.py:51` | Event-loop stalls — the reported slowness |
 | `modules/music.py` | 7,929 lines | Unmaintainable; changes cause collateral breakage |
 | Stale Discord CDN URL | `utils/music/ui/theme.py` `PREMIUM_DECORATIVE_BAR` | 2023 unsigned attachment link; now 404s — broken image in every player embed |
-| Non-emoji glyphs in `STATUS_ICONS` | `utils/music/ui/theme.py:57` (`∞` U+221E, `✓` U+2713, bare `▶` U+25B6) | Rejected by Discord if used as component emoji — the module's own docstring warns about exactly this |
+| Non-emoji glyphs in `STATUS_ICONS` | `utils/music/ui/theme.py:57` — exactly 3: `↻` U+21BB, `∞` U+221E, `✓` U+2713 | Latent trap, not a live bug: currently rendered as embed *text* (harmless), but Discord rejects them as component emoji. The module's own docstring warns about exactly this. `emoji_set._DEFAULTS` was checked and is entirely valid. |
 | Empty Spotify credentials | `application.yml:73-74` with `spotify: true` | Lavalink Spotify source enabled but unauthenticated |
 | Deezer disabled + no key | `application.yml:87-88` | `dzsearch` silently returns empty |
 | `countryCode: "BR"` | `application.yml:75,79` | Brazil region leftover from upstream fork |
