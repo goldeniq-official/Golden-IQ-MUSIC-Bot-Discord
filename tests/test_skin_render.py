@@ -23,15 +23,14 @@ ALL_SKINS = (
 STATE_NAMES = sorted(all_player_states().keys())
 
 # Confirmed defects awaiting a Phase 2 fix. Keyed by (kind, name).
-# Non-strict: the 'live' state takes a different branch and passes, and an
-# xpass there must not be reported as a failure.
-KNOWN_BROKEN = {
-    ("static_player", "classic"): (
-        "Phase 2: classic.py:43 calls queue_render.remaining_time_marker() but "
-        "utils/music/ui/queue_render is never imported (only layout, theme are) "
-        "-> NameError on every render except live streams. Introduced by adae264."
-    ),
-}
+# Non-strict: a state that takes a different branch may legitimately xpass.
+#
+# Fixed and removed from this map:
+#   ("static_player", "classic") — classic.py:43 called
+#   queue_render.remaining_time_marker() while importing only layout and
+#   theme, raising NameError on every render except live streams. Introduced
+#   by adae264; the missing import was added in Phase 2.
+KNOWN_BROKEN: dict[tuple[str, str], str] = {}
 
 
 def _skin_params():
