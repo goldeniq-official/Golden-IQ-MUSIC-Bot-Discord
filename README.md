@@ -44,9 +44,9 @@ Hosting on your own PC/VPS (Windows/Linux)
 
 ### Requirements:
 
-- Python 3.9, 3.10, or 3.11<br/>
+- **Python 3.14** (the bundled `venv/` holds cp314 wheels; another minor version will not load them)<br/>
   [Download from the Microsoft Store](https://apps.microsoft.com/store/detail/9PJPW5LDXLZ5?hl=en-us&gl=US) (Recommended for Windows 10/11 users).<br/>
-  [Direct download from the official site](https://www.python.org/downloads/release/python-3117/) (Check this option during installation: **Add python to the PATH**)
+  [Direct download from the official site](https://www.python.org/downloads/) (Check this option during installation: **Add python to the PATH**)
 - [Git](https://git-scm.com/downloads) (Do not choose the portable version)</br>
 
 - [JDK 17](https://www.azul.com/downloads) or higher (Not required to install manually on Windows and Linux — it is downloaded automatically)</br>
@@ -93,6 +93,49 @@ bash source_update.sh
 ---
 
 Note: there are more guides on the [wiki](https://github.com/goldeniq-official/Golden-IQ-MUSIC-Bot-Discord/wiki).
+
+---
+
+## Development & tests
+
+### Environment
+
+The bot requires **Python 3.14**. The committed `venv/` is not portable —
+`venv/pyvenv.cfg` records an absolute path to the interpreter that created it,
+so a venv copied from another machine will fail with
+`did not find executable at '...\python.exe'`. Either recreate it:
+
+```shell
+py -3.14 -m venv venv
+venv/Scripts/python.exe -m pip install -r requirements.txt -r requirements-dev.txt
+```
+
+…or repoint `venv/pyvenv.cfg` at a local 3.14 interpreter (`home` and
+`executable` keys). A backup of the original is kept at `venv/pyvenv.cfg.bak`.
+
+### Running the tests
+
+```shell
+venv/Scripts/python.exe -m pytest -v
+```
+
+The suite runs fully offline — it needs no Discord token, no Lavalink node, and
+no database. It fabricates player and interaction objects to render every skin
+and drive every player control, because button clicks in Discord cannot be
+automated.
+
+### Console encoding
+
+Windows consoles default to cp1252, where printing an emoji raises
+`UnicodeEncodeError`. `main.py` reconfigures stdio to UTF-8 before its first
+emoji output; `tests/test_environment.py` guards that this stays true.
+
+### Design & plan documents
+
+- Audit findings and approach: [docs/superpowers/specs/](docs/superpowers/specs/)
+- Task-by-task implementation plan: [docs/superpowers/plans/](docs/superpowers/plans/)
+
+---
 
 ### Important notes:
 

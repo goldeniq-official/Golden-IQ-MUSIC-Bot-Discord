@@ -65,7 +65,7 @@ Facts established by measurement. Do not re-derive; do re-verify if something co
 - Create: `pytest.ini`
 - Create: `tests/__init__.py`
 - Create: `tests/test_environment.py`
-- Modify: `app.py`
+- Modify: `main.py` (**not** `app.py` — `app.py` is only `from main import *`)
 - Modify: `README.md`
 
 **Interfaces:**
@@ -132,7 +132,9 @@ Install: `./venv/Scripts/python.exe -m pip install -r requirements-dev.txt`
 
 - [ ] **Step 4: Force UTF-8 stdio at process start**
 
-In `app.py`, insert before the `from utils.client import BotPool` line:
+Edit `main.py`, **not** `app.py`. `app.py` contains only `from main import *`; the real startup sequence — including the first emoji `print` — lives in `main.py`. Setting the encoding in `app.py` would run too late for `python main.py` and is pointless indirection for `python app.py`.
+
+In `main.py`, insert immediately after the `# -*- coding: utf-8 -*-` line and before `from platform import python_version`:
 
 ```python
 # Windows consoles default to cp1252; emoji in logs raise UnicodeEncodeError.
@@ -1469,7 +1471,7 @@ git commit -m "fix: replace Portuguese fork leftovers with Khmer + English"
 **Files:**
 - Create: `utils/logs.py`
 - Create: `tests/test_logs.py`
-- Modify: `app.py`
+- Modify: `main.py`
 
 **Interfaces:**
 - Produces:
@@ -1634,7 +1636,7 @@ Expected: 5 passed.
 
 - [ ] **Step 5: Call `setup_logging` at startup**
 
-In `app.py`, after the UTF-8 block from Task 1:
+In `main.py` (not `app.py` — see Task 1 Step 4), after the UTF-8 block from Task 1 and before `pool = BotPool()`:
 
 ```python
 from utils.logs import setup_logging
