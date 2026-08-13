@@ -17,7 +17,7 @@ DESCRIPTION_LIMIT = 100
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
-COG_FILES = ["modules/music.py", "modules/music_settings.py",
+COG_FILES = ["modules/music/__init__.py", "modules/music_settings.py",
              "modules/misc.py", "modules/lastfm.py"]
 
 PREFIX_RE = re.compile(r'^\s{4}emoji\s*=\s*"(.+?)"\s*$\n\s{4}name\s*=\s*"(.+?)"\s*$',
