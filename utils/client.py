@@ -697,15 +697,24 @@ class BotPool:
 
         self.ws_client = WSClient(self.config["RPC_SERVER"], pool=self)
 
-        try:
-            spotify_client = SpotifyClient(
-                client_id=self.config['SPOTIFY_CLIENT_ID'],
-                client_secret=self.config['SPOTIFY_CLIENT_SECRET'],
-                playlist_extra_page_limit=self.config['SPOTIFY_PLAYLIST_EXTRA_PAGE_LIMIT']
-            )
-        except Exception as e:
-            print(f"⚠️ - Internal Spotify support disabled: {repr(e)}")
+        # Skip the internal Spotify client when the Lavalink config has the
+        # source switched off. Starting it anyway made every boot print a
+        # token failure for a source the bot is deliberately not offering,
+        # which buries the warnings that do need attention.
+        from utils.music.source_status import compute_unavailable_sources
+
+        if "spotify" in compute_unavailable_sources():
             spotify_client = None
+        else:
+            try:
+                spotify_client = SpotifyClient(
+                    client_id=self.config['SPOTIFY_CLIENT_ID'],
+                    client_secret=self.config['SPOTIFY_CLIENT_SECRET'],
+                    playlist_extra_page_limit=self.config['SPOTIFY_PLAYLIST_EXTRA_PAGE_LIMIT']
+                )
+            except Exception as e:
+                print(f"⚠️ - Internal Spotify support disabled: {repr(e)}")
+                spotify_client = None
 
         self.spotify = spotify_client
 

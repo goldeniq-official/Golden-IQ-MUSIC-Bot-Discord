@@ -26,12 +26,14 @@ BUDGETS = {
     "utils/music/models.py": 3840,
     "utils/music/interactions.py": 3350,
     "modules/music_settings.py": 2000,
-    # Raised 1510 -> 1525 on 2026-08-13 for the load_modules package-discovery
-    # fix (+17 lines, mostly the comment explaining why the old os.walk logic
-    # silently dropped the Music cog). Raising a budget needs a reason like
-    # this one recorded here; growth without a stated cause is what the
-    # ratchet exists to stop.
-    "utils/client.py": 1525,
+    # Raised twice on 2026-08-13, each with a stated cause:
+    #   1510 -> 1525  load_modules package discovery fix (+17), which stopped
+    #                 the Music cog from silently failing to load.
+    #   1525 -> 1535  skip the internal Spotify client when the source is
+    #                 disabled (+8), so boots stop printing a token failure
+    #                 for a source the bot deliberately does not offer.
+    # Growth without a reason recorded here is what the ratchet exists to stop.
+    "utils/client.py": 1535,
 }
 
 
