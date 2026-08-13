@@ -42,7 +42,7 @@ Static findings:
 | Bare `except:` | 320 across `modules/`, `utils/` | Errors vanish; owner cannot report them |
 | `except` → `pass` | 370 | Silent wrong behavior instead of a fault |
 | Test files | 0 (in 30,701 lines) | Nothing prevents regressions |
-| Blocking `requests.get()` in async paths | `utils/client.py:614`, `utils/music/local_lavalink.py:19`, `utils/music/remote_lavalink_serverlist.py:51` | Event-loop stalls — the reported slowness |
+| ~~Blocking `requests.get()` in async paths~~ | `utils/client.py:614`, `utils/music/local_lavalink.py:19`, `utils/music/remote_lavalink_serverlist.py:51` | **Retracted 2026-08-13.** All three sit in plain `def` functions on the startup path, and the one reachable at runtime (`run_lavalink`) is invoked through `loop.run_in_executor`, so it runs on a thread. No blocking I/O reaches the event loop, directly or transitively — verified by AST scan over all 53 modules. The reported slowness has another cause; see §4.4. |
 | `modules/music.py` | 7,929 lines | Unmaintainable; changes cause collateral breakage |
 | Stale Discord CDN URL | `utils/music/ui/theme.py` `PREMIUM_DECORATIVE_BAR` | 2023 unsigned attachment link; now 404s — broken image in every player embed |
 | Non-emoji glyphs in `STATUS_ICONS` | `utils/music/ui/theme.py:57` — exactly 3: `↻` U+21BB, `∞` U+221E, `✓` U+2713 | Latent trap, not a live bug: currently rendered as embed *text* (harmless), but Discord rejects them as component emoji. The module's own docstring warns about exactly this. `emoji_set._DEFAULTS` was checked and is entirely valid. |
@@ -205,8 +205,14 @@ an exception silently.
 
 ### 4.4 Phase 4 — Performance
 
-- Convert the three blocking `requests.get()` calls in async paths to
-  `aiohttp`, eliminating event-loop stalls.
+- ~~Convert the three blocking `requests.get()` calls in async paths to
+  `aiohttp`.~~ **Retracted.** The premise was wrong: an AST scan of all 53
+  modules found no blocking call inside a coroutine, and no coroutine calling
+  a blocking helper without `run_in_executor`. `tests/test_async_hygiene.py`
+  now enforces both properties so a future regression is caught, but there was
+  nothing to convert. The slowness must be explained by the remaining items
+  below, or by something not yet identified — it should not be claimed fixed
+  without a measurement.
 - Cache `guild_data`, currently re-read from MongoDB on essentially every
   interaction, with explicit invalidation on write.
 - Review the player update path (`auto_update`, progress-bar re-render rate)
