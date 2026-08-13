@@ -154,11 +154,11 @@ plugins:
     spotify:
       clientId: ""
       clientSecret: ""
-      countryCode: "BR" # the country code you want to use for filtering the artists top tracks. See https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2
+      countryCode: "KH" # the country code you want to use for filtering the artists top tracks. See https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2
       playlistLoadLimit: 3 # The number of pages at 100 tracks each
       albumLoadLimit: 3 # The number of pages at 50 tracks each
     applemusic:
-      countryCode: "BR" # the country code you want to use for filtering the artists top tracks and language. See https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2
+      countryCode: "KH" # the country code you want to use for filtering the artists top tracks and language. See https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2
       mediaAPIToken: "" # apple music api token
       # or specify an apple music key
       keyID: "" # your key id

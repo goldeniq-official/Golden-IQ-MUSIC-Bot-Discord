@@ -82,8 +82,17 @@ def compute_unavailable_sources(app_yml_path="application.yml") -> set:
     from pathlib import Path
 
     path = Path(app_yml_path)
+
     if not path.exists():
-        return set()
+        # A fresh Pterodactyl server has no application.yml — it is generated
+        # from the bundled template the first time Lavalink starts
+        # (utils/music/local_lavalink.py). The Music cog is constructed before
+        # that happens, so fall back to the template; otherwise the very first
+        # boot would offer sources it cannot serve.
+        template = Path(f"{app_yml_path}.example")
+        if not template.exists():
+            return set()
+        path = template
 
     try:
         from ruamel.yaml import YAML
