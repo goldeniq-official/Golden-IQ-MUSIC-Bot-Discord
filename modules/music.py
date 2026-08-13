@@ -37,6 +37,7 @@ from utils.music.converters import time_format, fix_characters, string_to_second
     YOUTUBE_VIDEO_REG, google_search, percentage, music_source_image
 from utils.music.errors import GenericError, MissingVoicePerms, NoVoice, PoolException, parse_error, \
     EmptyFavIntegration, DiffVoiceChannel, NoPlayer
+from utils.music.source_status import detect_source, unavailable_message, compute_unavailable_sources
 from utils.music.interactions import VolumeInteraction, QueueInteraction, SelectInteraction, FavMenuView, ViewMode, \
     SetStageTitle, SelectBotVoice, youtube_regex, ButtonInteraction
 from utils.music.models import LavalinkPlayer, LavalinkTrack, LavalinkPlaylist, PartialTrack, PartialPlaylist, \
@@ -62,6 +63,11 @@ class Music(commands.Cog):
 
     audio_formats = ("audio/mpeg", "audio/ogg", "audio/mp4", "audio/aac")
 
+    # Overwritten per-instance in __init__ from the Lavalink config. The empty
+    # class-level default keeps attribute access safe for instances built
+    # without __init__ (tests) and during early startup.
+    unavailable_sources: frozenset = frozenset()
+
     providers_info = {
         "youtube": "ytsearch",
         "soundcloud": "scsearch",
@@ -76,6 +82,14 @@ class Music(commands.Cog):
     def __init__(self, bot: BotCore):
 
         self.bot = bot
+
+        # Sources lavasrc cannot serve (switched off, or on with blank
+        # credentials). get_tracks rejects these up front with a message
+        # naming a source that works, instead of letting the user hit an
+        # opaque FriendlyException or an empty result.
+        self.unavailable_sources = compute_unavailable_sources()
+        if self.unavailable_sources:
+            print(f"⚠️ - Audio sources unavailable: {', '.join(sorted(self.unavailable_sources))}")
 
         self.modules = [
                 "utils.music.models",
@@ -7395,6 +7409,13 @@ class Music(commands.Cog):
             user: disnake.Member, node: wavelink.Node = None, source=None, bot: BotCore = None, mix=False):
 
         exceptions = set()
+
+        # Fail fast on sources that cannot serve this request, with a message
+        # naming one that can. Without this, Spotify raised an opaque
+        # FriendlyException and Deezer returned an empty result rendered as
+        # "nothing found" — neither told the user the source was the problem.
+        if (dead_source := detect_source(query)) and dead_source in self.unavailable_sources:
+            raise GenericError(unavailable_message(dead_source))
 
         if mix:
             if not self.bot.pool.last_fm:

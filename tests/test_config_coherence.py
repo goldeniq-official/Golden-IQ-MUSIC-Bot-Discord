@@ -45,7 +45,6 @@ def _env_has(key: str) -> bool:
     return False
 
 
-@pytest.mark.xfail(reason="Phase 2 Task 8: lavasrc Spotify enabled with empty clientId")
 def test_spotify_enabled_implies_credentials(lavasrc):
     enabled = (lavasrc.get("sources") or {}).get("spotify", False)
     if not enabled:
@@ -80,7 +79,6 @@ def test_deezer_is_coherently_configured(lavasrc):
         assert not enabled, "Deezer enabled without a key — queries return empty"
 
 
-@pytest.mark.xfail(reason="Phase 2 Task 8: countryCode still 'BR' from the fork")
 @pytest.mark.parametrize("section", ["spotify", "applemusic"])
 def test_region_is_not_the_upstream_fork_default(lavasrc, section):
     code = (lavasrc.get(section) or {}).get("countryCode")

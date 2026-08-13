@@ -141,7 +141,10 @@ plugins:
     - "scsearch:%QUERY%"
     - "ytsearch:%QUERY%"   # Will be used if track has no ISRC or no track r
     sources:
-      spotify: true # Enable Spotify source
+      spotify: false # Disabled: credentials rejected by Spotify
+      # (HTTP 400 invalid_client, verified 2026-08-13). Set back to true
+      # after putting a working clientId/clientSecret below; the bot
+      # tells users the source is off until then.
       applemusic: false # Enable Apple Music source
       deezer: false # Enable Deezer source
       yandexmusic: false # Enable Yandex Music source
