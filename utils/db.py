@@ -185,7 +185,13 @@ class LocalDatabase(BaseDB):
             data = update_values(deepcopy(default_model[db_name]), data)
             data["ver"] = default_model[db_name]["ver"]
 
+            # update_data writes through to the cache itself.
             await self.update_data(id_, data, db_name=db_name, collection=collection)
+            return data
+
+        # Populate the cache on read, not only on write — see the note in
+        # MongoDatabase.get_data.
+        self.cache[f"{collection}:{db_name}:{id_}"] = data
 
         return data
 
@@ -285,12 +291,20 @@ class MongoDatabase(BaseDB):
         data = await self._connect[collection][db_name].find_one({"_id": id_})
 
         if not data:
-            return deepcopy(default_model[db_name])
+            data = deepcopy(default_model[db_name])
 
         elif data["ver"] != default_model[db_name]["ver"]:
             data = update_values(deepcopy(default_model[db_name]), data)
             data["ver"] = default_model[db_name]["ver"]
+            # update_data writes through to the cache itself.
             await self.update_data(id_, data, db_name=db_name, collection=collection)
+            return data
+
+        # Populate the cache on read, not only on write. Without this the
+        # lookup above could never hit for a guild that had not been written
+        # this TTL window, so every read reached the database — including the
+        # several that a single button press triggers.
+        self.cache[f"{collection}:{db_name}:{id_}"] = data
 
         return data
 

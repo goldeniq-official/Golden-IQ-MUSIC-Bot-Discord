@@ -9,7 +9,7 @@ import disnake
 
 from utils.music.converters import fix_characters, music_source_image, time_format
 from utils.music.models import LavalinkPlayer
-from utils.music.ui import layout, theme
+from utils.music.ui import layout, queue_render, theme
 from utils.music.ui.components import ButtonRowFactory
 from utils.music.ui.emoji_set import e as emoji
 

@@ -42,7 +42,7 @@ Static findings:
 | Bare `except:` | 320 across `modules/`, `utils/` | Errors vanish; owner cannot report them |
 | `except` → `pass` | 370 | Silent wrong behavior instead of a fault |
 | Test files | 0 (in 30,701 lines) | Nothing prevents regressions |
-| Blocking `requests.get()` in async paths | `utils/client.py:614`, `utils/music/local_lavalink.py:19`, `utils/music/remote_lavalink_serverlist.py:51` | Event-loop stalls — the reported slowness |
+| ~~Blocking `requests.get()` in async paths~~ | `utils/client.py:614`, `utils/music/local_lavalink.py:19`, `utils/music/remote_lavalink_serverlist.py:51` | **Retracted 2026-08-13.** All three sit in plain `def` functions on the startup path, and the one reachable at runtime (`run_lavalink`) is invoked through `loop.run_in_executor`, so it runs on a thread. No blocking I/O reaches the event loop, directly or transitively — verified by AST scan over all 53 modules. The reported slowness has another cause; see §4.4. |
 | `modules/music.py` | 7,929 lines | Unmaintainable; changes cause collateral breakage |
 | Stale Discord CDN URL | `utils/music/ui/theme.py` `PREMIUM_DECORATIVE_BAR` | 2023 unsigned attachment link; now 404s — broken image in every player embed |
 | Non-emoji glyphs in `STATUS_ICONS` | `utils/music/ui/theme.py:57` — exactly 3: `↻` U+21BB, `∞` U+221E, `✓` U+2713 | Latent trap, not a live bug: currently rendered as embed *text* (harmless), but Discord rejects them as component emoji. The module's own docstring warns about exactly this. `emoji_set._DEFAULTS` was checked and is entirely valid. |
@@ -205,12 +205,32 @@ an exception silently.
 
 ### 4.4 Phase 4 — Performance
 
-- Convert the three blocking `requests.get()` calls in async paths to
-  `aiohttp`, eliminating event-loop stalls.
-- Cache `guild_data`, currently re-read from MongoDB on essentially every
-  interaction, with explicit invalidation on write.
-- Review the player update path (`auto_update`, progress-bar re-render rate)
-  and reduce redundant message edits, which also lowers rate-limit pressure.
+- ~~Convert the three blocking `requests.get()` calls in async paths to
+  `aiohttp`.~~ **Retracted.** The premise was wrong: an AST scan of all 53
+  modules found no blocking call inside a coroutine, and no coroutine calling
+  a blocking helper without `run_in_executor`. `tests/test_async_hygiene.py`
+  now enforces both properties so a future regression is caught, but there was
+  nothing to convert. The slowness must be explained by the remaining items
+  below, or by something not yet identified — it should not be claimed fixed
+  without a measurement.
+- **Confirmed, with a correction to the diagnosis.** `guild_data` was indeed
+  reaching the database on essentially every read, but not for the stated
+  reason: `BaseDB` already held a `TTLCache(maxsize=1000, ttl=300)` and
+  `get_data` already consulted it. The cache was simply never populated on a
+  read — only `update_data` wrote to it — so the lookup could only hit for a
+  guild written within the TTL window. Both `MongoDatabase.get_data` and
+  `LocalDatabase.get_data` now populate on read. Measured with a counting
+  fake: 5 repeated reads went from 5 database round trips to 1.
+- **Already implemented; no change made.** `LavalinkPlayer.invoke_np` compares
+  the freshly rendered payload against `self.last_data` and skips the Discord
+  edit when they match (`utils/music/models.py:2561`). Adding a second
+  deduplication layer would be redundant machinery on a critical path. What
+  was missing is a guarantee that the renders feeding that comparison are
+  deterministic — a skin that varied its output for unchanged state would
+  defeat the check silently and edit on every tick.
+  `tests/test_render_rate.py` now verifies all 15 skins are deterministic,
+  and that real changes (position, pause) still produce a new payload so the
+  dedup cannot freeze a live player.
 - Measure before and after; report real numbers rather than asserting
   improvement.
 

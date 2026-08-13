@@ -867,7 +867,7 @@ class Owner(commands.Cog):
                     counter += 1
 
         if not counter:
-            raise GenericError(f"**Nenhuma mensagem foi deletada de {amount} verificada{'s'[:amount^1]}...**")
+            raise GenericError(f"**មិនមានសារណាមួយត្រូវបានលុបទេ / No messages were deleted out of {amount} checked...**")
 
         if counter == 1:
             txt = "**Uma mensagem foi deletada do seu DM.**"

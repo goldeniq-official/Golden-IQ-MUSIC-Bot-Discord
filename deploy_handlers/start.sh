@@ -63,14 +63,46 @@ if [ "${AUTO_UPDATE:-0}" = "1" ]; then
 fi
 # --------------------------------------------------------------------------
 
+# --- Python version guard -------------------------------------------------
+# requirements.txt pins a disnake commit and uses audioop-lts on 3.13+. The
+# egg offers several images; anything below 3.11 will fail in confusing ways
+# further along, so say so here instead.
+PY_OK="$(python3 -c 'import sys; print(1 if sys.version_info[:2] >= (3, 11) else 0)' 2>/dev/null || echo 0)"
+if [ "${PY_OK}" != "1" ]; then
+  echo "[boot] FATAL: Python 3.11 or newer is required."
+  echo "[boot] Current: $(python3 --version 2>&1 || echo 'python3 not found')"
+  echo "[boot] Fix: set the server's Docker image to Python 3.14 in the panel."
+  exit 1
+fi
+
+# --- Dependencies ---------------------------------------------------------
+# This runs on every boot because the install container's Python (Debian
+# bookworm ships 3.11) is not the runtime Python chosen by the Docker image,
+# so packages built at install time would be the wrong ABI. pip installs into
+# /home/container/.local, which lives on the server volume, so a restart with
+# everything already satisfied is fast.
 if [ "${SKIP_PIP_ON_START:-0}" != "1" ] && [ -f requirements.txt ]; then
   mkdir -p /home/container/.tmp
   export TMPDIR=/home/container/.tmp
   if [ "${INSTALL_BROWSER_DEPS:-0}" != "1" ]; then
     sed -i -E '/^(nodriver|undetected-chromedriver)([[:space:]=<>!]|$)/Id' requirements.txt 2>/dev/null || true
   fi
-  python3 -m pip install --no-cache-dir -r requirements.txt
+  # This script does not use `set -e`. Without an explicit check a failed
+  # install fell through to exec below, and the bot died on an ImportError
+  # that gave no hint the real problem was pip.
+  if ! python3 -m pip install --no-cache-dir -r requirements.txt; then
+    echo "[boot] FATAL: dependency installation failed — not starting the bot."
+    echo "[boot] Check the lines above for the failing package. Common causes:"
+    echo "[boot]   - server out of disk quota"
+    echo "[boot]   - no outbound network access to PyPI"
+    echo "[boot]   - Docker image Python version incompatible with a wheel"
+    rm -rf /home/container/.tmp
+    exit 1
+  fi
   rm -rf /home/container/.tmp
 fi
 
+# main.py, not app.py — app.py is only `from main import *`, and main.py
+# reconfigures stdio to UTF-8 before its first emoji print. Containers often
+# default to the C locale, where that print would raise UnicodeEncodeError.
 exec python3 -u main.py

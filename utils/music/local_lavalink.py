@@ -247,7 +247,11 @@ def run_lavalink(
         java_cmd += f" -Xmx{lavalink_ram_limit}m"
 
     if 0 < lavalink_initial_ram < lavalink_ram_limit:
-        java_cmd += f" -Xms{lavalink_ram_limit}m"
+        # -Xms is the *initial* heap. Passing the limit here made the JVM
+        # reserve the whole heap at startup, so LAVALINK_INITIAL_RAM had no
+        # effect and small Pterodactyl plans could OOM before the bot even
+        # connected.
+        java_cmd += f" -Xms{lavalink_initial_ram}m"
 
     if os.name != "nt":
 

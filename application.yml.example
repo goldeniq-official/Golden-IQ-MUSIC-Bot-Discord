@@ -141,7 +141,10 @@ plugins:
     - "scsearch:%QUERY%"
     - "ytsearch:%QUERY%"   # Will be used if track has no ISRC or no track r
     sources:
-      spotify: true # Enable Spotify source
+      spotify: false # Disabled: credentials rejected by Spotify
+      # (HTTP 400 invalid_client, verified 2026-08-13). Set back to true
+      # after putting a working clientId/clientSecret below; the bot
+      # tells users the source is off until then.
       applemusic: false # Enable Apple Music source
       deezer: false # Enable Deezer source
       yandexmusic: false # Enable Yandex Music source
@@ -151,11 +154,11 @@ plugins:
     spotify:
       clientId: ""
       clientSecret: ""
-      countryCode: "BR" # the country code you want to use for filtering the artists top tracks. See https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2
+      countryCode: "KH" # the country code you want to use for filtering the artists top tracks. See https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2
       playlistLoadLimit: 3 # The number of pages at 100 tracks each
       albumLoadLimit: 3 # The number of pages at 50 tracks each
     applemusic:
-      countryCode: "BR" # the country code you want to use for filtering the artists top tracks and language. See https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2
+      countryCode: "KH" # the country code you want to use for filtering the artists top tracks and language. See https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2
       mediaAPIToken: "" # apple music api token
       # or specify an apple music key
       keyID: "" # your key id

@@ -17,6 +17,29 @@ if TYPE_CHECKING:
     from utils.client import BotCore
 
 
+def build_generic_error_embed(error: BaseException, **context):
+    """Build the red fallback embed and register a reportable Error ID.
+
+    Returns ``(embed, error_id)``. The ID is the whole point: without it the
+    embed said only "something went wrong", so a user reporting a problem had
+    nothing to quote and the traceback was already gone.
+    """
+    from utils.logs import record_error
+
+    error_id = record_error(error, **context)
+
+    embed = disnake.Embed(
+        color=disnake.Color.red(),
+        title="⚠️ មានបញ្ហាបច្ចេកទេស / Something went wrong",
+        description=(
+            "មានកំហុសមួយកើតឡើងពេលដំណើរការពាក្យបញ្ជានេះ។\n"
+            "An unexpected error occurred while running this command.\n\n"
+            f"-# `{type(error).__name__}` ⬩ លេខកូដកំហុស / Error ID: `{error_id}`"
+        ),
+    )
+    return embed, error_id
+
+
 class ErrorHandler(commands.Cog):
 
     def __init__(self, bot: BotCore):
@@ -111,14 +134,12 @@ class ErrorHandler(commands.Cog):
 
             components = self.components
 
-            kwargs["embed"] = disnake.Embed(
-                color=color,
-                title="⚠️ មានបញ្ហាបច្ចេកទេស / Something went wrong",
-                description=(
-                    "មានកំហុសមួយកើតឡើងពេលដំណើរការពាក្យបញ្ជានេះ។\n"
-                    "An unexpected error occurred while running this command.\n\n"
-                    f"-# `{type(error).__name__}`"
-                ),
+            kwargs["embed"], _error_id = build_generic_error_embed(
+                error,
+                guild=getattr(inter, "guild_id", None),
+                user=getattr(getattr(inter, "author", None), "id", None),
+                command=getattr(getattr(inter, "application_command", None), "name", None)
+                        or getattr(getattr(inter, "data", None), "custom_id", None),
             )
 
             if self.bot.config["AUTO_ERROR_REPORT_WEBHOOK"]:
@@ -236,7 +257,8 @@ class ErrorHandler(commands.Cog):
                 if ctx.cog:
                     try:
                         ctx.args.remove(ctx.cog)
-                    except:
+                    except ValueError:
+                        # Already absent from args; nothing to strip.
                         pass
                 try:
                     await ctx.command(*ctx.args, **ctx.kwargs)
@@ -295,7 +317,11 @@ class ErrorHandler(commands.Cog):
         try:
             if error.self_delete and ctx.channel.permissions_for(ctx.guild.me).manage_messages:
                 await ctx.message.delete()
-        except:
+        except AttributeError:
+            # error has no self_delete, or ctx lacks guild/channel context (DM).
+            pass
+        except disnake.HTTPException:
+            # Message already gone, or deletion refused — not worth surfacing.
             pass
 
         if resp_msg:
@@ -309,7 +335,8 @@ class ErrorHandler(commands.Cog):
             else:
                 try:
                     func = ctx.store_message.edit
-                except:
+                except AttributeError:
+                    # No stored message to edit — send a fresh one instead.
                     func = ctx.send
 
             await func(components=components, **kwargs)

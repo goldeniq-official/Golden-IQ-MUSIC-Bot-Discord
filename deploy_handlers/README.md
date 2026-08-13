@@ -47,6 +47,25 @@ the install step never finished writing `start.sh`. On the **current egg version
      tree to the latest commit on `BRANCH`.
    - Everything else has sensible defaults.
 
+### Optional variables worth setting
+
+| Variable | Why you might change it |
+| --- | --- |
+| `SUPPORT_SERVER` | Puts a link on error messages so users can report the Error ID shown there. |
+| `DEFAULT_SKIN` | Player appearance: `classic`, `default`, `default_progressbar`, `embed_link`, `lite`, `micro_controller`, `micro_nc`, `mini`, `minimalist`, `miniplayer`. |
+| `DEFAULT_STATIC_SKIN` | Appearance of the fixed song-request player: `classic`, `default`, `default_progressbar`, `embed_link`, `mini`. |
+| `LAVALINK_SERVER_LIST` | Use a remote Lavalink instead of the bundled one — set `RUN_LOCAL_LAVALINK=false` too. |
+| `IDLE_TIMEOUT` | Seconds the bot stays in a voice channel with nothing playing (default 180). |
+| `EMBED_COLOR` | Hex accent color, e.g. `D4AF37`. Blank follows the bot's role color. |
+
+**Spotify and Deezer are disabled by default.** Spotify needs a working
+`clientId` / `clientSecret` from the
+[Spotify Developer Dashboard](https://developer.spotify.com/dashboard); Deezer
+needs a `masterDecryptionKey`. Until those are configured, the bot tells users
+the source is unavailable and points them at YouTube or SoundCloud, rather than
+failing with an unexplained error. To enable Spotify, put the credentials in
+`application.yml` and set `sources.spotify: true` there.
+
 ## Updating the bot
 
 By default, every new server uses the official repo + auto-update, so you
@@ -97,7 +116,31 @@ The safest way to avoid this is to upload the entire project as a **single zip**
 
 ### Lavalink fails to start
 
-Java 17 is installed by the egg's install script. If the bot still cannot find Java, set `RUN_LOCAL_LAVALINK=false` and configure a remote node by editing `lavalink.ini` (copy `lavalink.ini.example`).
+The install script installs `openjdk-17-jre-headless`, but that happens in the
+**install container**, which is discarded when the install finishes. The
+runtime container is a Python image with **no Java**, so on first boot the bot
+downloads its own JDK 17 into the server volume. That download is why the first
+start is much slower than later ones, and why the disk recommendation is 3000
+MB.
+
+If Java still cannot be found, or you would rather not spend the disk, set
+`RUN_LOCAL_LAVALINK=false` and point the bot at a remote node — either with the
+`LAVALINK_SERVER_LIST` panel variable or by copying `lavalink.ini.example` to
+`lavalink.ini`.
+
+### Lavalink is killed on startup / the server runs out of memory
+
+Lower `LAVALINK_RAM_LIMIT`. `LAVALINK_INITIAL_RAM` is the heap the JVM reserves
+immediately and must stay below the limit; the defaults (60 MB initial, 200 MB
+limit) suit a 1 GB server.
+
+### An error message shows a code like `A7K2M9QP`
+
+That is an **Error ID**. The full traceback for it is stored in
+`.logs/bot.log` on the server, so quoting the ID is enough to identify exactly
+what failed — there is no need to reproduce the problem or copy a screenshot.
+Set the `SUPPORT_SERVER` variable to put a direct link to your support server
+on those messages.
 
 ### Bot says "PRIVILEGED INTENTS REQUIRED"
 
