@@ -1,0 +1,26 @@
+# Line endings for files that run on Linux servers.
+#
+# This repo is developed on Windows with core.autocrlf=true, which stores LF
+# in git and checks out CRLF locally. That works only as long as every
+# contributor has the same setting. If a shell script is ever committed with
+# CRLF, Linux reads the shebang as "#!/bin/bash\r" and the Pterodactyl server
+# fails to boot with a bare "no such file or directory" that points at
+# nothing obvious.
+#
+# Pinning eol=lf on the files that Linux executes or parses removes that
+# dependency on local git configuration.
+
+*.sh        text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+Dockerfile  text eol=lf
+.Dockerfile text eol=lf
+
+# Binaries git must not touch.
+*.jar   binary
+*.zip   binary
+*.gz    binary
+*.png   binary
+*.jpg   binary
+*.gif   binary
+*.pkl   binary

@@ -222,3 +222,36 @@ def test_start_script_guards_the_python_version():
         "an old Docker image should fail with a clear message, not an "
         "obscure error deeper in startup"
     )
+
+
+def test_shell_scripts_are_stored_with_lf_endings():
+    """A CRLF shebang makes Linux fail with a misleading "not found" error.
+
+    The repo is developed on Windows; without .gitattributes this depends on
+    every contributor having core.autocrlf set the same way.
+    """
+    import subprocess
+
+    result = subprocess.run(
+        ["git", "ls-files", "--eol", "*.sh"],
+        cwd=PROJECT_ROOT, capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        pytest.skip("git not available")
+
+    offenders = []
+    for line in result.stdout.splitlines():
+        # Format: "i/lf    w/crlf  attr/text=auto  path"
+        if line.startswith("i/crlf") or line.startswith("i/mixed"):
+            offenders.append(line)
+    assert not offenders, f"shell scripts stored with CRLF in git: {offenders}"
+
+
+def test_gitattributes_pins_shell_script_endings():
+    attrs = PROJECT_ROOT / ".gitattributes"
+    assert attrs.is_file(), (
+        ".gitattributes is what keeps a Windows contributor from committing "
+        "a CRLF start.sh that will not run on the server"
+    )
+    content = attrs.read_text(encoding="utf-8")
+    assert "*.sh" in content and "eol=lf" in content
