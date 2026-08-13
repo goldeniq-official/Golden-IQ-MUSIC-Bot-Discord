@@ -387,10 +387,10 @@ class MusicSettings(commands.Cog):
                 description="Clear messages from the selected channel (up to 100 messages, not effective in forums).",
                 choices=[
                     disnake.OptionChoice(
-                        disnake.Localized("Yes", data={disnake.Locale.pt_BR: "Sim"}), "yes"
+                        "Yes", "yes"
                     ),
                     disnake.OptionChoice(
-                        disnake.Localized("No", data={disnake.Locale.pt_BR: "No"}), "no"
+                        "No", "no"
                     )
                 ],
             )

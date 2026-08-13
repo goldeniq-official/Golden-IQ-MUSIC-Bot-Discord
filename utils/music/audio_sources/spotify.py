@@ -183,7 +183,7 @@ class SpotifyClient:
                     data = await response.json()
 
                 if data.get("error"):
-                    print(f"⚠️ - Spotify: Ocorreu um erro ao obter token: {data['error_description']}")
+                    print(f"⚠️ - Spotify: មិនអាចទាញយក token បានទេ / Failed to obtain token: {data['error_description']}")
                     self.client_id = None
                     self.client_secret = None
                     await self.get_access_token()

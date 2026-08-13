@@ -255,7 +255,7 @@ class Music(commands.Cog):
                 description="Play the song immediately (instead of adding to queue).",
                 default="no",
                 choices=[
-                    disnake.OptionChoice(disnake.Localized("Yes", data={disnake.Locale.pt_BR: "Sim"}), "yes"),
+                    disnake.OptionChoice("Yes", "yes"),
                 ]
             ),
             options: str = commands.Param(name="options", description="Options to process playlist",
@@ -267,7 +267,7 @@ class Music(commands.Cog):
                 description="Manually select an available bot.",
                 default="no",
                 choices=[
-                    disnake.OptionChoice(disnake.Localized("Yes", data={disnake.Locale.pt_BR: "Sim"}), "yes"),
+                    disnake.OptionChoice("Yes", "yes"),
                 ]
             ),
     ):
@@ -556,7 +556,7 @@ class Music(commands.Cog):
                 description="Play the song immediately (instead of adding to queue).",
                 default="no",
                 choices=[
-                    disnake.OptionChoice(disnake.Localized("Yes", data={disnake.Locale.pt_BR: "Sim"}), "yes"),
+                    disnake.OptionChoice("Yes", "yes"),
                 ]
             ),
             server: str = commands.Param(name="server", desc="Use a specific music server for the search.",
@@ -566,7 +566,7 @@ class Music(commands.Cog):
                 description="Manually select an available bot.",
                 default="no",
                 choices=[
-                    disnake.OptionChoice(disnake.Localized("Yes", data={disnake.Locale.pt_BR: "Sim"}), "yes"),
+                    disnake.OptionChoice("Yes", "yes"),
                 ]
             ),
     ):
@@ -630,7 +630,7 @@ class Music(commands.Cog):
                 description="Play the song immediately (instead of adding to queue).",
                 default="no",
                 choices=[
-                    disnake.OptionChoice(disnake.Localized("Yes", data={disnake.Locale.pt_BR: "Sim"}), "yes"),
+                    disnake.OptionChoice("Yes", "yes"),
                 ]
             ),
             mix: str = commands.Param(
@@ -638,7 +638,7 @@ class Music(commands.Cog):
                 description="Play recommended songs based on the artist - song name provided",
                 default=False,
                 choices=[
-                    disnake.OptionChoice(disnake.Localized("Yes", data={disnake.Locale.pt_BR: "Sim"}), "yes"),
+                    disnake.OptionChoice("Yes", "yes"),
                 ]
             ),
             manual_selection: bool = commands.Param(name="selecionar_manualmente",
@@ -653,7 +653,7 @@ class Music(commands.Cog):
                 description="Manually select an available bot.",
                 default="no",
                 choices=[
-                    disnake.OptionChoice(disnake.Localized("Yes", data={disnake.Locale.pt_BR: "Sim"}), "yes"),
+                    disnake.OptionChoice("Yes", "yes"),
                 ]
             ),
     ):
@@ -2191,10 +2191,10 @@ class Music(commands.Cog):
                 default=None,
             ),
             play_only: str = commands.Param(
-                name=disnake.Localized("play_only", data={disnake.Locale.pt_BR: "tocar_apenas"}),
+                name="play_only",
                 choices=[
                     disnake.OptionChoice(
-                        disnake.Localized("Yes", data={disnake.Locale.pt_BR: "Sim"}), "yes"
+                        "Yes", "yes"
                     )
                 ],
                 description="Only play the song immediately (without rotating the queue)",
@@ -2789,13 +2789,13 @@ class Music(commands.Cog):
                 name="modo",
                 choices=[
                     disnake.OptionChoice(
-                        disnake.Localized("Current", data={disnake.Locale.pt_BR: "Current Song"}), "current"
+                        "Current", "current"
                     ),
                     disnake.OptionChoice(
-                        disnake.Localized("Queue", data={disnake.Locale.pt_BR: "Fila"}), "queue"
+                        "Queue", "queue"
                     ),
                     disnake.OptionChoice(
-                        disnake.Localized("Off", data={disnake.Locale.pt_BR: "Desativar"}), "off"
+                        "Off", "off"
                     ),
                 ]
             )
@@ -3438,7 +3438,7 @@ class Music(commands.Cog):
     @is_dj()
     @has_player()
     @check_voice()
-    @commands.user_command(name=disnake.Localized("Add DJ", data={disnake.Locale.pt_BR: "Adicionar DJ"}),
+    @commands.user_command(name="Add DJ",
                            extras={"only_voiced": True})
     async def adddj_u(self, inter: disnake.UserCommandInteraction):
         await self.add_dj(interaction=inter, user=inter.target)
@@ -6487,7 +6487,7 @@ class Music(commands.Cog):
                     full_error_msg = has_exception
 
                 embed = disnake.Embed(
-                    title="Ocorreu um erro em um servidor (song-request):",
+                    title="មានកំហុសនៅលើ server មួយ (song-request) / An error occurred on a server (song-request):",
                     timestamp=disnake.utils.utcnow(),
                     description=f"```py\n{repr(has_exception)[:2030].replace(self.bot.http.token, 'mytoken')}```"
                 )
@@ -7514,9 +7514,17 @@ class Music(commands.Cog):
 
                 if txt:
                     if "This track is not readable. Available countries:" in txt:
-                        txt = "The specified song is not available in my current region..."
-                    raise GenericError(f"**Ocorreu um erro ao processar sua busca:** \n{txt}", error=txt)
-                raise GenericError("**No results found for your search.**")
+                        txt = ("បទចម្រៀងនេះមិនអាចប្រើបាននៅតំបន់របស់ខ្ញុំទេ។ / "
+                               "The specified song is not available in my current region...")
+                    raise GenericError(
+                        f"**មានកំហុសពេលដំណើរការការស្វែងរករបស់អ្នក / "
+                        f"An error occurred while processing your search:** \n{txt}",
+                        error=txt,
+                    )
+                raise GenericError(
+                    "**រកមិនឃើញលទ្ធផលសម្រាប់ការស្វែងរករបស់អ្នកទេ។ / "
+                    "No results found for your search.**"
+                )
 
         return tracks, node
 

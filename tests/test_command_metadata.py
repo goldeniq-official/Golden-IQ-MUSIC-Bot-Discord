@@ -74,9 +74,13 @@ def test_headroom_is_reported(path):
     assert worst <= DESCRIPTION_LIMIT
 
 
-@pytest.mark.xfail(reason="Phase 2 Task 11 removes the pt_BR fork leftovers")
 def test_no_portuguese_locale_leftovers():
-    """The fork's pt_BR localizations are dead weight; Khmer is the target."""
+    """The fork's pt_BR localizations are dead weight.
+
+    Discord exposes no Khmer locale (33 available, none km/kh), so this bot
+    puts Khmer inline in the literal string. A pt_BR mapping serves no user
+    here and still inflates every command-sync payload.
+    """
     offenders = []
     for path in COG_FILES:
         source = _read(path)
