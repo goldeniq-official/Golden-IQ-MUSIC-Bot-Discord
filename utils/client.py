@@ -379,12 +379,42 @@ class BotPool:
                     backoff += 2
                     retries += 1
 
-        if data['identifier'] == 'LOCAL' and self.mongo_database and data["info"]["check_version"] > 3 and [i for i in data["info"].get("plugins", {}) if i["name"] == "youtube-plugin"]:
+        # YouTube refuses requests from flagged IPs — routine for VPS and
+        # datacenter ranges — and a stored OAuth refresh token is what gets
+        # past it. When any precondition below fails, this used to do nothing
+        # at all, so a server with no working YouTube gave no clue why. Each
+        # branch now says which condition was not met.
+        yt_skip_reason = None
+        if data['identifier'] != 'LOCAL':
+            yt_skip_reason = None  # remote nodes manage their own auth
+        elif not self.mongo_database:
+            yt_skip_reason = ("MongoDB is not configured, so no stored YouTube "
+                              "token can be read (set the MONGO variable)")
+        elif data["info"]["check_version"] <= 3:
+            yt_skip_reason = (f"the Lavalink node reports version "
+                              f"{data['info']['check_version']}, which predates "
+                              f"the /youtube endpoint")
+        elif not [i for i in data["info"].get("plugins", {}) if i["name"] == "youtube-plugin"]:
+            yt_skip_reason = ("the youtube-plugin is not loaded on this Lavalink "
+                              "node (check the plugins section of application.yml)")
+
+        if yt_skip_reason:
+            print(f"⚠️ - YouTube OAuth not applied: {yt_skip_reason}. "
+                  f"YouTube playback will fail if this host's IP is flagged.")
+
+        if data['identifier'] == 'LOCAL' and not yt_skip_reason and self.mongo_database:
 
             try:
                 mongo_data = await self.mongo_database._connect["global"]["global"].find_one({"_id": "youtube_data"}) or {}
             except Exception:
                 traceback.print_exc()
+                mongo_data = {}
+
+            if not mongo_data.get("refresh_tokens"):
+                print("⚠️ - No YouTube OAuth token is stored. If YouTube "
+                      "playback fails with 'Something went wrong while looking "
+                      "up the track', link a YouTube account with the owner "
+                      "command to authenticate this host.")
             else:
                 if tokens:=mongo_data.get("refresh_tokens"):
                     for v in tokens.values():

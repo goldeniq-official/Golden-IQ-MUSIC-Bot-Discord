@@ -35,8 +35,11 @@ BUDGETS = {
     #   1525 -> 1535  skip the internal Spotify client when the source is
     #                 disabled (+8), so boots stop printing a token failure
     #                 for a source the bot deliberately does not offer.
+    #   1535 -> 1565  explain why YouTube OAuth was not applied (+28). It
+    #                 previously did nothing silently, so a server whose
+    #                 YouTube was blocked gave no clue where to look.
     # Growth without a reason recorded here is what the ratchet exists to stop.
-    "utils/client.py": 1535,
+    "utils/client.py": 1565,
 }
 
 
