@@ -1,245 +1,305 @@
 {
-  "_comment": "Pterodactyl egg for Golden IQ MUSIC Bot. Import via the admin panel: Nests -> (choose a nest) -> Import Egg.",
-  "meta": {
-    "version": "PTDL_v2",
-    "update_url": null
-  },
-  "exported_at": "2026-05-23T00:00:00+00:00",
-  "name": "Golden IQ MUSIC Bot",
-  "author": "info@goldeniq.email",
-  "description": "Discord music bot from Golden IQ. Supports YouTube, Spotify, SoundCloud, Last.fm, slash commands and Lavalink v3/v4.",
-  "features": null,
-  "docker_images": {
-    "Python 3.14": "ghcr.io/parkervcp/yolks:python_3.14",
-    "Python 3.13": "ghcr.io/parkervcp/yolks:python_3.13",
-    "Python 3.12": "ghcr.io/parkervcp/yolks:python_3.12",
-    "Python 3.11": "ghcr.io/parkervcp/yolks:python_3.11"
-  },
-  "file_denylist": [],
-  "startup": "bash -c 'cd /home/container && if [ ! -f start.sh ]; then echo \"[boot] start.sh missing — attempting self-heal...\"; if [ ! -d .git ] && [ -n \"${GIT_ADDRESS}\" ]; then echo \"[boot] No repo present; cloning ${GIT_ADDRESS} (branch=${BRANCH:-main})\"; git clone --branch \"${BRANCH:-main}\" --single-branch \"${GIT_ADDRESS}\" /tmp/_repo && cp -rn /tmp/_repo/. . && rm -rf /tmp/_repo; fi; if [ -f deploy_handlers/start.sh ]; then echo \"[boot] Restoring start.sh from deploy_handlers/start.sh\"; cp deploy_handlers/start.sh start.sh && chmod +x start.sh; else echo \"[boot] FATAL: deploy_handlers/start.sh not found. Reinstall the server from the Pterodactyl panel.\"; exit 127; fi; fi; exec bash start.sh'",
-  "config": {
-    "files": "{}",
-    "startup": "{\r\n    \"done\": \"] Online.\"\r\n}",
-    "logs": "{}",
-    "stop": "^C"
-  },
-  "scripts": {
-    "installation": {
-      "script": "#!/bin/bash\nset -e\n\napt update\napt install -y --no-install-recommends git curl ca-certificates openjdk-17-jre-headless\n\nmkdir -p /mnt/server\ncd /mnt/server\n\n# Redirect pip temp/build dirs onto the server volume so /tmp (which is\n# small / RAM-backed in many Pterodactyl setups) does not run out of space\n# while building wheels for heavy deps.\nmkdir -p /mnt/server/.tmp /mnt/server/.pip-cache\nexport TMPDIR=/mnt/server/.tmp\nexport PIP_CACHE_DIR=/mnt/server/.pip-cache\n\nif [ -n \"${GIT_ADDRESS}\" ] && [ ! -d .git ]; then\n  echo \"[install] Cloning ${GIT_ADDRESS} (branch=${BRANCH:-main})\"\n  if [ -z \"$(ls -A . 2>/dev/null)\" ]; then\n    git clone --branch \"${BRANCH:-main}\" --single-branch \"${GIT_ADDRESS}\" .\n  else\n    git clone --branch \"${BRANCH:-main}\" --single-branch \"${GIT_ADDRESS}\" /tmp/repo\n    cp -rn /tmp/repo/. .\n    rm -rf /tmp/repo\n  fi\nfi\n\n# Stage start.sh as early as possible — before pip/apt have a chance to fail —\n# so the runtime container always finds /home/container/start.sh. The runtime\n# startup command also self-heals from deploy_handlers/start.sh if this file\n# is ever deleted, but copying it up-front avoids the self-heal path entirely.\nif [ -f deploy_handlers/start.sh ]; then\n  cp deploy_handlers/start.sh /mnt/server/start.sh\n  chmod +x /mnt/server/start.sh\n  echo \"[install] Staged start.sh from deploy_handlers/start.sh\"\nelse\n  echo \"[install] WARNING: deploy_handlers/start.sh missing in the cloned repo — runtime self-heal will fail.\"\nfi\n\n# Optionally trim heavy browser-automation deps from requirements.txt to\n# save ~250 MB of disk during install. Default: 0 (skip them).\nif [ -f requirements.txt ] && [ \"${INSTALL_BROWSER_DEPS:-0}\" != \"1\" ]; then\n  echo '[install] INSTALL_BROWSER_DEPS=0 -> stripping nodriver / undetected-chromedriver from requirements.txt'\n  sed -i -E '/^(nodriver|undetected-chromedriver)([[:space:]=<>!]|$)/Id' requirements.txt\nfi\n\nif [ -f requirements.txt ]; then\n  python3 -m pip install --upgrade --no-cache-dir pip wheel setuptools\n  python3 -m pip install --no-cache-dir -r requirements.txt\nfi\n\n# Free build artefacts that we no longer need on the bot's volume.\nrm -rf /mnt/server/.tmp /mnt/server/.pip-cache\n\n# Force env-var-driven config on Pterodactyl: remove any stale .env that\n# could shadow the variables set in the panel (dotenv_values() in\n# config_loader.py overrides os.environ if a .env file exists).\nrm -f .env config.json\n\nif [ ! -f /mnt/server/start.sh ]; then\n  echo \"[install] ERROR: /mnt/server/start.sh was not staged. The runtime container will fail to boot. Check that deploy_handlers/start.sh exists in the cloned repo.\"\n  exit 1\nfi\n\necho \"[install] Done.\"\n",
-      "container": "debian:bookworm-slim",
-      "entrypoint": "bash"
-    }
-  },
-  "variables": [
-    {
-      "name": "Discord Bot Token",
-      "description": "The bot token from the Discord Developer Portal.",
-      "env_variable": "TOKEN",
-      "default_value": "",
-      "user_viewable": true,
-      "user_editable": true,
-      "rules": "required|string",
-      "field_type": "text"
+    "_comment": "Pterodactyl egg for Golden IQ MUSIC Bot. Import via the admin panel: Nests -> (choose a nest) -> Import Egg.",
+    "meta": {
+        "version": "PTDL_v2",
+        "update_url": null
     },
-    {
-      "name": "Git Repository",
-      "description": "Git URL to clone the bot from on first install. Defaults to the official Golden IQ MUSIC Bot repo so a new server installs with zero manual uploads. Override only if you maintain a private fork (use https://<user>:<token>@github.com/... for private repos).",
-      "env_variable": "GIT_ADDRESS",
-      "default_value": "https://github.com/goldeniq-official/Golden-IQ-MUSIC-Bot-Discord.git",
-      "user_viewable": true,
-      "user_editable": true,
-      "rules": "required|string",
-      "field_type": "text"
+    "exported_at": "2026-05-23T00:00:00+00:00",
+    "name": "Golden IQ MUSIC Bot",
+    "author": "info@goldeniq.email",
+    "description": "Discord music bot from Golden IQ. Supports YouTube, Spotify, SoundCloud, Last.fm, slash commands and Lavalink v3/v4.",
+    "features": null,
+    "docker_images": {
+        "Python 3.14": "ghcr.io/parkervcp/yolks:python_3.14",
+        "Python 3.13": "ghcr.io/parkervcp/yolks:python_3.13",
+        "Python 3.12": "ghcr.io/parkervcp/yolks:python_3.12",
+        "Python 3.11": "ghcr.io/parkervcp/yolks:python_3.11"
     },
-    {
-      "name": "Git Branch",
-      "description": "Branch to clone when GIT_ADDRESS is set.",
-      "env_variable": "BRANCH",
-      "default_value": "main",
-      "user_viewable": true,
-      "user_editable": true,
-      "rules": "nullable",
-      "field_type": "text"
+    "file_denylist": [],
+    "startup": "bash -c 'cd /home/container && if [ ! -f start.sh ]; then echo \"[boot] start.sh missing — attempting self-heal...\"; if [ ! -d .git ] && [ -n \"${GIT_ADDRESS}\" ]; then echo \"[boot] No repo present; cloning ${GIT_ADDRESS} (branch=${BRANCH:-main})\"; git clone --branch \"${BRANCH:-main}\" --single-branch \"${GIT_ADDRESS}\" /tmp/_repo && cp -rn /tmp/_repo/. . && rm -rf /tmp/_repo; fi; if [ -f deploy_handlers/start.sh ]; then echo \"[boot] Restoring start.sh from deploy_handlers/start.sh\"; cp deploy_handlers/start.sh start.sh && chmod +x start.sh; else echo \"[boot] FATAL: deploy_handlers/start.sh not found. Reinstall the server from the Pterodactyl panel.\"; exit 127; fi; fi; exec bash start.sh'",
+    "config": {
+        "files": "{}",
+        "startup": "{\r\n    \"done\": \"] Online.\"\r\n}",
+        "logs": "{}",
+        "stop": "^C"
     },
-    {
-      "name": "Auto Update",
-      "description": "Set to 1 to force-sync the bot to origin/<BRANCH> on every start (git fetch + reset --hard). Default 1 so new servers always boot with the latest code from GitHub.",
-      "env_variable": "AUTO_UPDATE",
-      "default_value": "1",
-      "user_viewable": true,
-      "user_editable": true,
-      "rules": "required|string|in:0,1",
-      "field_type": "text"
+    "scripts": {
+        "installation": {
+            "script": "#!/bin/bash\nset -e\n\napt update\napt install -y --no-install-recommends git curl ca-certificates openjdk-17-jre-headless\n\nmkdir -p /mnt/server\ncd /mnt/server\n\n# Redirect pip temp/build dirs onto the server volume so /tmp (which is\n# small / RAM-backed in many Pterodactyl setups) does not run out of space\n# while building wheels for heavy deps.\nmkdir -p /mnt/server/.tmp /mnt/server/.pip-cache\nexport TMPDIR=/mnt/server/.tmp\nexport PIP_CACHE_DIR=/mnt/server/.pip-cache\n\nif [ -n \"${GIT_ADDRESS}\" ] && [ ! -d .git ]; then\n  echo \"[install] Cloning ${GIT_ADDRESS} (branch=${BRANCH:-main})\"\n  if [ -z \"$(ls -A . 2>/dev/null)\" ]; then\n    git clone --branch \"${BRANCH:-main}\" --single-branch \"${GIT_ADDRESS}\" .\n  else\n    git clone --branch \"${BRANCH:-main}\" --single-branch \"${GIT_ADDRESS}\" /tmp/repo\n    cp -rn /tmp/repo/. .\n    rm -rf /tmp/repo\n  fi\nfi\n\n# Stage start.sh as early as possible — before pip/apt have a chance to fail —\n# so the runtime container always finds /home/container/start.sh. The runtime\n# startup command also self-heals from deploy_handlers/start.sh if this file\n# is ever deleted, but copying it up-front avoids the self-heal path entirely.\nif [ -f deploy_handlers/start.sh ]; then\n  cp deploy_handlers/start.sh /mnt/server/start.sh\n  chmod +x /mnt/server/start.sh\n  echo \"[install] Staged start.sh from deploy_handlers/start.sh\"\nelse\n  echo \"[install] WARNING: deploy_handlers/start.sh missing in the cloned repo — runtime self-heal will fail.\"\nfi\n\n# Optionally trim heavy browser-automation deps from requirements.txt to\n# save ~250 MB of disk during install. Default: 0 (skip them).\nif [ -f requirements.txt ] && [ \"${INSTALL_BROWSER_DEPS:-0}\" != \"1\" ]; then\n  echo '[install] INSTALL_BROWSER_DEPS=0 -> stripping nodriver / undetected-chromedriver from requirements.txt'\n  sed -i -E '/^(nodriver|undetected-chromedriver)([[:space:]=<>!]|$)/Id' requirements.txt\nfi\n\nif [ -f requirements.txt ]; then\n  python3 -m pip install --upgrade --no-cache-dir pip wheel setuptools\n  python3 -m pip install --no-cache-dir -r requirements.txt\nfi\n\n# Free build artefacts that we no longer need on the bot's volume.\nrm -rf /mnt/server/.tmp /mnt/server/.pip-cache\n\n# Force env-var-driven config on Pterodactyl: remove any stale .env that\n# could shadow the variables set in the panel (dotenv_values() in\n# config_loader.py overrides os.environ if a .env file exists).\nrm -f .env config.json\n\nif [ ! -f /mnt/server/start.sh ]; then\n  echo \"[install] ERROR: /mnt/server/start.sh was not staged. The runtime container will fail to boot. Check that deploy_handlers/start.sh exists in the cloned repo.\"\n  exit 1\nfi\n\necho \"[install] Done.\"\n",
+            "container": "debian:bookworm-slim",
+            "entrypoint": "bash"
+        }
     },
-    {
-      "name": "Skip pip install on start",
-      "description": "Set to 1 to skip pip install on every start (faster boot).",
-      "env_variable": "SKIP_PIP_ON_START",
-      "default_value": "0",
-      "user_viewable": true,
-      "user_editable": true,
-      "rules": "required|string|in:0,1",
-      "field_type": "text"
-    },
-    {
-      "name": "Install Browser Deps",
-      "description": "Set to 1 to install nodriver + undetected-chromedriver (only needed for YouTube po_token refresh). Adds ~250 MB of disk. Default 0 to keep installs small on Pterodactyl.",
-      "env_variable": "INSTALL_BROWSER_DEPS",
-      "default_value": "0",
-      "user_viewable": true,
-      "user_editable": true,
-      "rules": "required|string|in:0,1",
-      "field_type": "text"
-    },
-    {
-      "name": "MongoDB URL",
-      "description": "Optional. MongoDB connection string.",
-      "env_variable": "MONGO",
-      "default_value": "",
-      "user_viewable": true,
-      "user_editable": true,
-      "rules": "nullable",
-      "field_type": "text"
-    },
-    {
-      "name": "Default Prefix",
-      "description": "Prefix for legacy text commands.",
-      "env_variable": "DEFAULT_PREFIX",
-      "default_value": "!!",
-      "user_viewable": true,
-      "user_editable": true,
-      "rules": "required|string|max:5",
-      "field_type": "text"
-    },
-    {
-      "name": "Owner IDs",
-      "description": "Space-separated Discord user IDs with owner privileges.",
-      "env_variable": "OWNER_IDS",
-      "default_value": "",
-      "user_viewable": true,
-      "user_editable": true,
-      "rules": "nullable",
-      "field_type": "text"
-    },
-    {
-      "name": "Run Local Lavalink",
-      "description": "If true, the bot downloads and runs Lavalink.jar inside the container.",
-      "env_variable": "RUN_LOCAL_LAVALINK",
-      "default_value": "true",
-      "user_viewable": true,
-      "user_editable": true,
-      "rules": "required|string|in:true,false",
-      "field_type": "text"
-    },
-    {
-      "name": "Connect Local Lavalink",
-      "description": "If true, bot connects to the local Lavalink instance.",
-      "env_variable": "CONNECT_LOCAL_LAVALINK",
-      "default_value": "true",
-      "user_viewable": true,
-      "user_editable": true,
-      "rules": "required|string|in:true,false",
-      "field_type": "text"
-    },
-    {
-      "name": "Auto Download Lavalink Serverlist",
-      "description": "Fetch a public Lavalink server list when local is disabled.",
-      "env_variable": "AUTO_DOWNLOAD_LAVALINK_SERVERLIST",
-      "default_value": "false",
-      "user_viewable": true,
-      "user_editable": true,
-      "rules": "required|string|in:true,false",
-      "field_type": "text"
-    },
-    {
-      "name": "Lavalink Initial RAM (MB)",
-      "description": "JVM -Xms value for local Lavalink.",
-      "env_variable": "LAVALINK_INITIAL_RAM",
-      "default_value": "60",
-      "user_viewable": true,
-      "user_editable": true,
-      "rules": "required|integer|min:30",
-      "field_type": "text"
-    },
-    {
-      "name": "Lavalink RAM Limit (MB)",
-      "description": "JVM -Xmx value for local Lavalink.",
-      "env_variable": "LAVALINK_RAM_LIMIT",
-      "default_value": "200",
-      "user_viewable": true,
-      "user_editable": true,
-      "rules": "required|integer|min:60",
-      "field_type": "text"
-    },
-    {
-      "name": "Last.fm Key",
-      "description": "Optional. Last.fm API key.",
-      "env_variable": "LASTFM_KEY",
-      "default_value": "",
-      "user_viewable": true,
-      "user_editable": true,
-      "rules": "nullable",
-      "field_type": "text"
-    },
-    {
-      "name": "Last.fm Secret",
-      "description": "Optional. Last.fm API secret.",
-      "env_variable": "LASTFM_SECRET",
-      "default_value": "",
-      "user_viewable": true,
-      "user_editable": true,
-      "rules": "nullable",
-      "field_type": "text"
-    },
-    {
-      "name": "Spotify Client ID",
-      "description": "Optional. Spotify API client ID.",
-      "env_variable": "SPOTIFY_CLIENT_ID",
-      "default_value": "",
-      "user_viewable": true,
-      "user_editable": true,
-      "rules": "nullable",
-      "field_type": "text"
-    },
-    {
-      "name": "Spotify Client Secret",
-      "description": "Optional. Spotify API client secret.",
-      "env_variable": "SPOTIFY_CLIENT_SECRET",
-      "default_value": "",
-      "user_viewable": true,
-      "user_editable": true,
-      "rules": "nullable",
-      "field_type": "text"
-    },
-    {
-      "name": "Error Report Webhook",
-      "description": "Optional. Discord webhook URL for manual error reports.",
-      "env_variable": "ERROR_REPORT_WEBHOOK",
-      "default_value": "",
-      "user_viewable": true,
-      "user_editable": true,
-      "rules": "nullable",
-      "field_type": "text"
-    },
-    {
-      "name": "Auto Error Report Webhook",
-      "description": "Optional. Discord webhook URL for automatic error reports.",
-      "env_variable": "AUTO_ERROR_REPORT_WEBHOOK",
-      "default_value": "",
-      "user_viewable": true,
-      "user_editable": true,
-      "rules": "nullable",
-      "field_type": "text"
-    },
-    {
-      "name": "RPC Port",
-      "description": "Port for the RPC web server.",
-      "env_variable": "PORT",
-      "default_value": "80",
-      "user_viewable": true,
-      "user_editable": true,
-      "rules": "required|integer|min:1|max:65535",
-      "field_type": "text"
-    }
-  ]
+    "variables": [
+        {
+            "name": "Discord Bot Token",
+            "description": "The bot token from the Discord Developer Portal.",
+            "env_variable": "TOKEN",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Git Repository",
+            "description": "Git URL to clone the bot from on first install. Defaults to the official Golden IQ MUSIC Bot repo so a new server installs with zero manual uploads. Override only if you maintain a private fork (use https://<user>:<token>@github.com/... for private repos).",
+            "env_variable": "GIT_ADDRESS",
+            "default_value": "https://github.com/goldeniq-official/Golden-IQ-MUSIC-Bot-Discord.git",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Git Branch",
+            "description": "Branch to clone when GIT_ADDRESS is set.",
+            "env_variable": "BRANCH",
+            "default_value": "main",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable",
+            "field_type": "text"
+        },
+        {
+            "name": "Auto Update",
+            "description": "Set to 1 to force-sync the bot to origin/<BRANCH> on every start (git fetch + reset --hard). Default 1 so new servers always boot with the latest code from GitHub.",
+            "env_variable": "AUTO_UPDATE",
+            "default_value": "1",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|in:0,1",
+            "field_type": "text"
+        },
+        {
+            "name": "Skip pip install on start",
+            "description": "Set to 1 to skip pip install on every start (faster boot).",
+            "env_variable": "SKIP_PIP_ON_START",
+            "default_value": "0",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|in:0,1",
+            "field_type": "text"
+        },
+        {
+            "name": "Install Browser Deps",
+            "description": "Set to 1 to install nodriver + undetected-chromedriver (only needed for YouTube po_token refresh). Adds ~250 MB of disk. Default 0 to keep installs small on Pterodactyl.",
+            "env_variable": "INSTALL_BROWSER_DEPS",
+            "default_value": "0",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|in:0,1",
+            "field_type": "text"
+        },
+        {
+            "name": "MongoDB URL",
+            "description": "Optional. MongoDB connection string.",
+            "env_variable": "MONGO",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable",
+            "field_type": "text"
+        },
+        {
+            "name": "Default Prefix",
+            "description": "Prefix for legacy text commands.",
+            "env_variable": "DEFAULT_PREFIX",
+            "default_value": "!!",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|max:5",
+            "field_type": "text"
+        },
+        {
+            "name": "Owner IDs",
+            "description": "Space-separated Discord user IDs with owner privileges.",
+            "env_variable": "OWNER_IDS",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable",
+            "field_type": "text"
+        },
+        {
+            "name": "Run Local Lavalink",
+            "description": "If true, the bot downloads and runs Lavalink.jar inside the container.",
+            "env_variable": "RUN_LOCAL_LAVALINK",
+            "default_value": "true",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|in:true,false",
+            "field_type": "text"
+        },
+        {
+            "name": "Connect Local Lavalink",
+            "description": "If true, bot connects to the local Lavalink instance.",
+            "env_variable": "CONNECT_LOCAL_LAVALINK",
+            "default_value": "true",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|in:true,false",
+            "field_type": "text"
+        },
+        {
+            "name": "Auto Download Lavalink Serverlist",
+            "description": "Fetch a public Lavalink server list when local is disabled.",
+            "env_variable": "AUTO_DOWNLOAD_LAVALINK_SERVERLIST",
+            "default_value": "false",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|in:true,false",
+            "field_type": "text"
+        },
+        {
+            "name": "Lavalink Initial RAM (MB)",
+            "description": "JVM -Xms value for local Lavalink.",
+            "env_variable": "LAVALINK_INITIAL_RAM",
+            "default_value": "60",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|integer|min:30",
+            "field_type": "text"
+        },
+        {
+            "name": "Lavalink RAM Limit (MB)",
+            "description": "JVM -Xmx value for local Lavalink.",
+            "env_variable": "LAVALINK_RAM_LIMIT",
+            "default_value": "200",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|integer|min:60",
+            "field_type": "text"
+        },
+        {
+            "name": "Last.fm Key",
+            "description": "Optional. Last.fm API key.",
+            "env_variable": "LASTFM_KEY",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable",
+            "field_type": "text"
+        },
+        {
+            "name": "Last.fm Secret",
+            "description": "Optional. Last.fm API secret.",
+            "env_variable": "LASTFM_SECRET",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable",
+            "field_type": "text"
+        },
+        {
+            "name": "Spotify Client ID",
+            "description": "Optional. Spotify API client ID.",
+            "env_variable": "SPOTIFY_CLIENT_ID",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable",
+            "field_type": "text"
+        },
+        {
+            "name": "Spotify Client Secret",
+            "description": "Optional. Spotify API client secret.",
+            "env_variable": "SPOTIFY_CLIENT_SECRET",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable",
+            "field_type": "text"
+        },
+        {
+            "name": "Error Report Webhook",
+            "description": "Optional. Discord webhook URL for manual error reports.",
+            "env_variable": "ERROR_REPORT_WEBHOOK",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable",
+            "field_type": "text"
+        },
+        {
+            "name": "Auto Error Report Webhook",
+            "description": "Optional. Discord webhook URL for automatic error reports.",
+            "env_variable": "AUTO_ERROR_REPORT_WEBHOOK",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable",
+            "field_type": "text"
+        },
+        {
+            "name": "RPC Port",
+            "description": "Port for the RPC web server.",
+            "env_variable": "PORT",
+            "default_value": "80",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|integer|min:1|max:65535",
+            "field_type": "text"
+        },
+        {
+            "name": "Default player skin",
+            "description": "រូបរាង player លំនាំដើម / Default player skin. One of: classic, default, default_progressbar, embed_link, lite, micro_controller, micro_nc, mini, minimalist, miniplayer.",
+            "env_variable": "DEFAULT_SKIN",
+            "default_value": "default",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|max:32",
+            "field_type": "text"
+        },
+        {
+            "name": "Default static player skin",
+            "description": "រូបរាង player ថេរ (song-request channel) / Default skin for the fixed song-request player. One of: classic, default, default_progressbar, embed_link, mini.",
+            "env_variable": "DEFAULT_STATIC_SKIN",
+            "default_value": "default",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|max:32",
+            "field_type": "text"
+        },
+        {
+            "name": "Support server invite",
+            "description": "តំណ server ជំនួយ / Support server invite URL. Shown as a button on error messages so users can report the Error ID.",
+            "env_variable": "SUPPORT_SERVER",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Remote Lavalink server list",
+            "description": "បញ្ជី Lavalink ពីចម្ងាយ / URL to a remote Lavalink server list. Leave blank to use the bundled local Lavalink.",
+            "env_variable": "LAVALINK_SERVER_LIST",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Idle timeout (seconds)",
+            "description": "រយៈពេលរង់ចាំមុនចាកចេញ / Seconds the player stays connected with nothing playing before it disconnects.",
+            "env_variable": "IDLE_TIMEOUT",
+            "default_value": "180",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|integer|min:30|max:86400",
+            "field_type": "text"
+        },
+        {
+            "name": "Embed color",
+            "description": "ពណ៌ embed / Embed accent color as a hex value such as D4AF37. Leave blank to follow the bot's role color.",
+            "env_variable": "EMBED_COLOR",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string|max:16",
+            "field_type": "text"
+        }
+    ]
 }

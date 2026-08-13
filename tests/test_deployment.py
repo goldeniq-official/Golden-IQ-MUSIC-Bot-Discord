@@ -141,3 +141,44 @@ def test_source_status_tolerates_a_server_with_neither_file(tmp_path, monkeypatc
 
     monkeypatch.chdir(tmp_path)
     assert compute_unavailable_sources("application.yml") == set()
+
+
+def test_egg_skin_defaults_name_real_skins(egg):
+    """A skin name typo in the panel silently breaks every player."""
+    from tests.test_skin_render import NORMAL_SKINS, STATIC_SKINS
+
+    by_name = {v["env_variable"]: v["default_value"] for v in egg["variables"]}
+    assert by_name.get("DEFAULT_SKIN") in NORMAL_SKINS, (
+        f"DEFAULT_SKIN={by_name.get('DEFAULT_SKIN')!r} is not a real skin; "
+        f"valid: {NORMAL_SKINS}"
+    )
+    assert by_name.get("DEFAULT_STATIC_SKIN") in STATIC_SKINS, (
+        f"DEFAULT_STATIC_SKIN={by_name.get('DEFAULT_STATIC_SKIN')!r} is not a "
+        f"real static skin; valid: {STATIC_SKINS}"
+    )
+
+
+def test_egg_variable_descriptions_list_valid_skins(egg):
+    """The panel help text must match the skins that actually ship."""
+    from tests.test_skin_render import NORMAL_SKINS, STATIC_SKINS
+
+    by_name = {v["env_variable"]: v for v in egg["variables"]}
+    for env, expected in (("DEFAULT_SKIN", NORMAL_SKINS),
+                          ("DEFAULT_STATIC_SKIN", STATIC_SKINS)):
+        desc = by_name[env]["description"]
+        missing = [s for s in expected if s not in desc]
+        assert not missing, f"{env} description omits real skins: {missing}"
+
+
+def test_egg_variables_are_well_formed(egg):
+    required_keys = {"name", "description", "env_variable", "default_value",
+                     "user_viewable", "user_editable", "rules", "field_type"}
+    for var in egg["variables"]:
+        missing = required_keys - set(var)
+        assert not missing, f"{var.get('env_variable')} missing keys: {missing}"
+
+
+def test_egg_has_no_duplicate_variables(egg):
+    names = [v["env_variable"] for v in egg["variables"]]
+    dupes = {n for n in names if names.count(n) > 1}
+    assert not dupes, f"duplicate panel variables would confuse the UI: {dupes}"
