@@ -37,7 +37,8 @@ from utils.music.converters import time_format, fix_characters, string_to_second
     YOUTUBE_VIDEO_REG, google_search, percentage, music_source_image
 from utils.music.errors import GenericError, MissingVoicePerms, NoVoice, PoolException, parse_error, \
     EmptyFavIntegration, DiffVoiceChannel, NoPlayer
-from utils.music.source_status import detect_source, unavailable_message, compute_unavailable_sources
+from utils.music.source_status import detect_source, unavailable_message, \
+    compute_unavailable_sources, youtube_block_hint
 from modules.music.controller import PlayerControllerMixin
 from utils.music.interactions import VolumeInteraction, QueueInteraction, SelectInteraction, FavMenuView, ViewMode, \
     SetStageTitle, SelectBotVoice, youtube_regex, ButtonInteraction
@@ -1938,7 +1939,7 @@ class Music(PlayerControllerMixin, commands.Cog):
                             else:
                                 tracks.data["playlistInfo"]["thumb"] = playlist_data["thumbnail_url"]
                     except Exception as exc:
-                        print(f"Falha ao obter artwork da playlist (oembed): {oembed_url} | {repr(exc)}")
+                        print(f"⚠️ - មិនអាចទាញរូបភាព playlist / Failed to fetch playlist artwork (oembed): {oembed_url} | {repr(exc)}")
 
                 else:
 
@@ -1973,7 +1974,7 @@ class Music(PlayerControllerMixin, commands.Cog):
 
                         tracks.data["playlistInfo"]["thumb"] = playlist_data["thumbnails"][0]['url']
                     except Exception as exc:
-                        print(f"Falha ao obter artwork da playlist: {q} | {repr(exc)}")
+                        print(f"⚠️ - មិនអាចទាញរូបភាព playlist / Failed to fetch playlist artwork: {q} | {repr(exc)}")
 
             loadtype = "playlist"
 
@@ -6232,7 +6233,7 @@ class Music(PlayerControllerMixin, commands.Cog):
             backoff *= 1.5
             if node.identifier != "LOCAL":
                 print(
-                    f'⚠️ - {self.bot.user} - Falha ao reconectar no servidor [{node.identifier}] nova tentativa em {int(backoff)}'
+                    f'⚠️ - {self.bot.user} - ភ្ជាប់មិនបានទេ / Failed to reconnect to [{node.identifier}] — retrying in {int(backoff)}'
                     f' segundos. Erro: {error}'[:300])
             await asyncio.sleep(backoff)
             retries += 1
@@ -6518,11 +6519,19 @@ class Music(PlayerControllerMixin, commands.Cog):
                         self.bot.dispatch("custom_error", ctx=ctx, error=e)
                 except wavelink.TrackLoadError as e:
                     exceptions.add(repr(e))
-                    print(f"Falha ao processar busca... [{n.identifier}/{search_provider}] {query} -> {e}")
+                    print(
+                        f"⚠️ - ការស្វែងរកបរាជ័យ / Search failed "
+                        f"[{n.identifier}/{search_provider}] {query} -> {e}"
+                    )
+                    if (hint := youtube_block_hint(query, str(e))):
+                        print(hint)
                     node_retry = True
                 except Exception as e:
                     exceptions.add(repr(e))
-                    print(f"Falha ao processar busca...\n{query}\n{traceback.format_exc()}")
+                    print(
+                        f"⚠️ - ការស្វែងរកបរាជ័យ / Search failed\n{query}\n"
+                        f"{traceback.format_exc()}"
+                    )
                     node_retry = True
 
                 if tracks or not source:

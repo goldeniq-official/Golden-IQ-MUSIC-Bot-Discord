@@ -116,7 +116,7 @@ class DeezerClient:
             async with ClientSession() as session:
                 async with session.get(url, allow_redirects=False) as r:
                     if 'location' not in r.headers:
-                        raise GenericError("**Falha ao obter resultado para o link informado...**")
+                        raise GenericError("**មិនអាចទាញលទ្ធផលពីតំណដែលបានឧ្យទេ / Could not fetch a result for the link provided...**")
                     url = str(r.headers["location"])
 
         url_type, url_id = matches.groups()[-2:]

@@ -122,6 +122,55 @@ def compute_unavailable_sources(app_yml_path="application.yml") -> set:
     return unavailable
 
 
+_YT_URL_RE = re.compile(
+    r"https?://(www\.|music\.|m\.)?(youtube\.com|youtu\.be)/", re.IGNORECASE
+)
+
+# Lavalink's youtube-source reports blocking as a generic FriendlyException.
+# These are the phrases it uses when YouTube refuses the request rather than
+# when the video genuinely does not exist.
+_YT_BLOCK_PHRASES = (
+    "something went wrong while looking up the track",
+    "sign in to confirm",
+    "not a bot",
+    "please sign in",
+    "this video is not available",
+)
+
+
+def is_youtube_query(query: str) -> bool:
+    if not query:
+        return False
+    stripped = query.strip().lstrip("<").rstrip(">")
+    return bool(_YT_URL_RE.search(stripped)) or stripped.lower().startswith(
+        ("ytsearch:", "ytmsearch:")
+    )
+
+
+def youtube_block_hint(query: str, error_text: str) -> Optional[str]:
+    """Explain an opaque YouTube failure, or return None if it is not one.
+
+    "Something went wrong while looking up the track" is what youtube-source
+    returns when YouTube refuses the request — overwhelmingly because the
+    host IP is flagged, which is normal for datacenter and VPS ranges and
+    does not happen on a home connection. The raw message sends people
+    hunting for a bug in the bot instead.
+    """
+    if not is_youtube_query(query):
+        return None
+    lowered = (error_text or "").lower()
+    if not any(phrase in lowered for phrase in _YT_BLOCK_PHRASES):
+        return None
+    return (
+        "   ↳ YouTube កំពុងបដិសេធ server នេះ (IP ត្រូវបានទប់ស្កាត់)។ / "
+        "YouTube is refusing this host — its IP is flagged, which is common "
+        "for VPS and datacenter ranges.\n"
+        "     ដំណោះស្រាយ / Fix: run the bot owner command to link a YouTube "
+        "account (OAuth), which authenticates the requests. See "
+        "modules/ll_yt_oauth.py. SoundCloud keeps working meanwhile."
+    )
+
+
 def unavailable_message(source: str, alternatives: str = "YouTube / SoundCloud") -> str:
     """Bilingual, actionable message for a source that cannot serve requests."""
     name = _DISPLAY.get(source, source.title())

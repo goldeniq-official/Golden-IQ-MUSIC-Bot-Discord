@@ -21,7 +21,10 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 TARGET_MAX_LINES = 1500
 
 BUDGETS = {
-    "modules/music/__init__.py": 7110,
+    # Raised 7110 -> 7120 for the bilingual search-failure logging and the
+    # YouTube-block diagnostic (+9). As with client.py below, a raised budget
+    # needs its reason recorded here.
+    "modules/music/__init__.py": 7120,
     "modules/music/controller.py": 950,
     "utils/music/models.py": 3840,
     "utils/music/interactions.py": 3350,

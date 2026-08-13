@@ -106,3 +106,75 @@ async def test_get_tracks_allows_working_sources():
         assert "unavailable" not in str(excinfo.value).lower(), (
             "a working source was wrongly rejected by the availability guard"
         )
+
+
+# --- YouTube block diagnosis ----------------------------------------------
+# Reported from production: YouTube URLs failed with Lavalink's generic
+# "Something went wrong while looking up the track", which reads like a bug in
+# the bot rather than the host IP being refused by YouTube.
+
+@pytest.mark.parametrize("query", [
+    "https://youtu.be/byOrb10CSoo?si=ncXqcDfV-RpIIMRc",
+    "https://www.youtube.com/watch?v=byOrb10CSoo",
+    "https://music.youtube.com/watch?v=abc",
+    "ytsearch:some song",
+    "ytmsearch:some song",
+])
+def test_recognises_youtube_queries(query):
+    from utils.music.source_status import is_youtube_query
+
+    assert is_youtube_query(query)
+
+
+@pytest.mark.parametrize("query", [
+    "scsearch:daft punk",
+    "https://soundcloud.com/artist/track",
+    "https://open.spotify.com/track/abc",
+])
+def test_non_youtube_queries_are_not_flagged(query):
+    from utils.music.source_status import is_youtube_query
+
+    assert not is_youtube_query(query)
+
+
+def test_block_hint_explains_the_real_cause():
+    from utils.music.source_status import youtube_block_hint
+
+    hint = youtube_block_hint(
+        "https://www.youtube.com/watch?v=byOrb10CSoo",
+        "LOCAL - Something went wrong while looking up the track.",
+    )
+    assert hint is not None
+    assert "IP" in hint, "must name the actual cause"
+    assert "OAuth" in hint, "must name the fix"
+    assert any("ក" <= ch <= "៿" for ch in hint), "must be bilingual"
+
+
+def test_block_hint_stays_quiet_for_unrelated_errors():
+    from utils.music.source_status import youtube_block_hint
+
+    assert youtube_block_hint(
+        "https://www.youtube.com/watch?v=abc", "Connection refused"
+    ) is None
+
+
+def test_block_hint_stays_quiet_for_non_youtube_sources():
+    from utils.music.source_status import youtube_block_hint
+
+    assert youtube_block_hint(
+        "scsearch:daft punk", "Something went wrong while looking up the track."
+    ) is None
+
+
+def test_no_portuguese_remains_in_the_search_path():
+    """'Falha ao processar busca' survived the earlier sweep and reached users."""
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parent.parent
+    offenders = []
+    for path in list((root / "modules").rglob("*.py")) + list((root / "utils").rglob("*.py")):
+        text = path.read_text(encoding="utf-8-sig")
+        for marker in ("Falha ao", "Ocorreu um erro", "Nenhuma mensagem"):
+            if marker in text:
+                offenders.append((str(path.relative_to(root)), marker))
+    assert not offenders, f"Portuguese strings still reaching users: {offenders}"

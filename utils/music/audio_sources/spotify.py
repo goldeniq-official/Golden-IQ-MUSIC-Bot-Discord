@@ -218,7 +218,7 @@ class SpotifyClient:
         if spotify_link_regex.match(query):
             async with bot.session.get(query, allow_redirects=False) as r:
                 if 'location' not in r.headers:
-                    raise GenericError("**Falha ao obter resultado para o link informado...**")
+                    raise GenericError("**មិនអាចទាញលទ្ធផលពីតំណដែលបានឧ្យទេ / Could not fetch a result for the link provided...**")
                 query = str(r.headers["location"])
 
         if not (matches := spotify_regex.match(query)) and not self.disabled:
