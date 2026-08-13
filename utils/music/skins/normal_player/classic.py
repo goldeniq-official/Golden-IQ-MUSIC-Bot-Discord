@@ -59,7 +59,6 @@ class ClassicSkin:
         embed_top.url = player.current.uri or player.current.search_uri
         embed_top.description = f"👤 **{player.current.author}**"
         embed_top.set_thumbnail(url=player.current.thumb)
-        embed_top.set_image(url=theme.PREMIUM_DECORATIVE_BAR)
 
         # ── Bottom embed: Blockquote styling + optional mini-queue ──────
         body_lines: list[str] = []
@@ -106,7 +105,6 @@ class ClassicSkin:
                 body_lines.append(queue_text)
 
         embed = disnake.Embed(color=color, description="\n".join(body_lines))
-        embed.set_image(url=theme.PREMIUM_DECORATIVE_BAR)
 
         if player.current_hint:
             embed.set_footer(text=f"{emoji('tip')}  {player.current_hint}")

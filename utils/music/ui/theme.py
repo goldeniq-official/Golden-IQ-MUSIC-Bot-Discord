@@ -31,8 +31,6 @@ DIVIDER_DOT = " ⬩ "
 # A sleeker accent bar for Next-Gen aesthetic
 PREMIUM_ACCENT_BAR = "━" * 20
 
-# Golden IQ specific modern animated bar, or sleek gradient
-PREMIUM_DECORATIVE_BAR = "https://cdn.discordapp.com/attachments/554468640942981147/1082887587770937455/rainbow_bar2.gif"
 
 # "Golden IQ" brand palette — warm gold tones used by help/about/info surfaces
 # that want to express bot identity rather than guild role color.
@@ -58,18 +56,18 @@ STATUS_ICONS = {
     "playing": "▶",
     "paused": "⏸",
     "stopped": "⏹",
-    "loading": "↻",
+    "loading": "🔄",
     "live": "🔴",
     "loop_track": "🔂",
     "loop_queue": "🔁",
-    "autoplay": "∞",
+    "autoplay": "♾️",
     "recommendation": "✨",
     "favorite": "🤍",
     "voice": "🔊",
     "info": "ℹ️",
     "warn": "⚠️",
     "error": "🛑",
-    "ok": "✓",
+    "ok": "✅",
 }
 
 

@@ -64,7 +64,6 @@ def test_emoji_set_defaults_are_all_valid():
     assert not bad, f"emoji_set._DEFAULTS contains non-emoji values: {bad}"
 
 
-@pytest.mark.xfail(reason="Phase 2 Task 10 fixes the 3 invalid STATUS_ICONS glyphs")
 def test_status_icons_are_component_safe():
     """STATUS_ICONS values are text-only today, so these are latent traps.
 

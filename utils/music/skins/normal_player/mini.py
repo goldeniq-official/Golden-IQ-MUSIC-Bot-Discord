@@ -17,7 +17,6 @@ from utils.music.ui.components import ButtonRowFactory
 from utils.music.ui.emoji_set import e as emoji
 
 
-DECORATIVE_BAR = "https://cdn.discordapp.com/attachments/554468640942981147/1082887587770937455/rainbow_bar2.gif"
 
 
 class MiniSkin:
@@ -84,7 +83,6 @@ class MiniSkin:
             icon_url=music_source_image(player.current.info["sourceName"]),
         )
         embed.set_thumbnail(url=player.current.thumb)
-        embed.set_image(url=DECORATIVE_BAR)
 
         if player.current_hint:
             embed.set_footer(text=f"{emoji('tip')} Tip: {player.current_hint}")
@@ -94,7 +92,6 @@ class MiniSkin:
             queue_text, _ = queue_render.render_queue_lines(player, max_items=5, format="compact")
             if queue_text:
                 embed_queue = disnake.Embed(color=color, description=queue_text)
-                embed_queue.set_image(url=DECORATIVE_BAR)
 
         data["embeds"] = [embed_queue, embed] if embed_queue else [embed]
 

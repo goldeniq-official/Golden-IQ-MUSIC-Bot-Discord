@@ -93,3 +93,19 @@ def test_skin_declares_name_and_preview(kind, name):
         f"{kind}/{name}: self-reported name is {skin.name!r}, expected {expected!r}"
     )
     assert isinstance(skin.preview, str) and skin.preview.startswith("http")
+
+
+def test_no_skin_references_the_dead_cdn_attachment():
+    """The 2023 attachment URL returns HTTP 404 (verified 2026-08-13).
+
+    Discord CDN attachment links now require signed ex/is/hm parameters;
+    unsigned legacy links are dead, so every player embed using it rendered
+    a broken image.
+    """
+    from pathlib import Path
+
+    dead = "attachments/554468640942981147/1082887587770937455"
+    root = Path(__file__).resolve().parent.parent / "utils" / "music"
+    offenders = [str(p) for p in root.rglob("*.py")
+                 if dead in p.read_text(encoding="utf-8")]
+    assert not offenders, f"dead CDN attachment URL still referenced in: {offenders}"
