@@ -88,6 +88,25 @@ class FakeTrack:
         self.thumb = over.get("thumb", "https://example.invalid/thumb.jpg")
         self.ytid = over.get("ytid", "dQw4w9WgXcQ")
         self.info = over.get("info", {"sourceName": "youtube", "extra": {}})
+        self._track_loops = over.get("track_loops", 0)
+
+    @property
+    def authors_string(self) -> str:
+        # Mirrors LavalinkTrack.authors_string (utils/music/models.py:191).
+        return self.author
+
+    @property
+    def authors_md(self) -> str:
+        return f"`{self.author}`"
+
+    @property
+    def authors(self) -> list:
+        return [self.author]
+
+    @property
+    def track_loops(self) -> int:
+        # Real tracks read this out of info["extra"] (models.py:231).
+        return self.info.get("extra", {}).get("track_loops", self._track_loops)
 
 
 class FakePlayer:
@@ -102,6 +121,9 @@ class FakePlayer:
         self.position = over.get("position", 45_000)
         self.paused = over.get("paused", False)
         self.volume = over.get("volume", 100)
+        # Real values are False | "current" | "queue" (models.py:3632-3640).
+        # Several skins branch on the exact string, so a bool would silently
+        # exercise neither branch.
         self.loop = over.get("loop", False)
         self.autoplay = over.get("autoplay", False)
         self.nightcore = over.get("nightcore", False)
@@ -148,7 +170,12 @@ def _states() -> dict:
         "no_artwork": make_player(current=FakeTrack(thumb="")),
         "long_title": make_player(current=FakeTrack(title=_LONG_KH, single_title=_LONG_KH)),
         "khmer_log": make_player(command_log="អ្នកប្រើបានរំលងបទចម្រៀង / User skipped the track"),
-        "all_toggles_on": make_player(loop=True, autoplay=True, nightcore=True,
+        "loop_current": make_player(loop="current",
+                                    current=FakeTrack(info={"sourceName": "youtube",
+                                                            "extra": {"track_loops": 3}})),
+        "loop_queue": make_player(loop="queue",
+                                  queue=[FakeTrack(title=f"Track {i}") for i in range(3)]),
+        "all_toggles_on": make_player(loop="queue", autoplay=True, nightcore=True,
                                       keep_connected=True, restrict_mode=True, volume=150),
     }
 
