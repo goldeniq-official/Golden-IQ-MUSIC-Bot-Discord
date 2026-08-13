@@ -19,6 +19,12 @@ nest_asyncio>=1.6.0
 # Database
 motor>=3.4.0
 tinymongo>=0.2.0
+# Imported directly by utils/db.py. tinymongo lists it transitively, but that
+# did not resolve on a fresh Pterodactyl install and the bot crashed on boot
+# with ModuleNotFoundError — declare what we import.
+tinydb-serialization>=2.1.0
+# Imported directly by utils/music/errors.py; otherwise only present via motor.
+pymongo>=4.9
 aiosqlite>=0.20.0
 dnspython>=2.6.1
 
@@ -33,6 +39,9 @@ yt-dlp[default]>=2025.08.11
 tornado>=6.4.2
 
 # HTTP / networking
+# aiohttp is imported directly in 14 modules; it arrives with disnake today,
+# but a dependency we import belongs here in its own right.
+aiohttp>=3.9.0,<4.0
 urllib3>=2.5.0
 async-timeout>=4.0.3
 curl_cffi>=0.7.0
